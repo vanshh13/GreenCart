@@ -77,10 +77,3 @@ GreenCart is a web and mobile platform designed for the sale and management of o
    git commit -m "Added feature-name"
    git push origin feature-name
    ```
-4. Submit a pull request describing your changes.
-
-## License
-This project is licensed under the MIT License. See the `LICENSE` file for details.
-
-## Contact
-For queries or issues, reach out via [issues](https://github.com/<your-username>/GreenCart/issues) or email us at support@greencart.org.
