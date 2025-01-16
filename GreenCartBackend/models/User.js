@@ -12,13 +12,7 @@ const UserSchema = new Schema({
   UserName: { type: String, required: true },
   UserEmail: { type: String, required: true },
   UserType: { type: String, required: true},
-  UserAddress: {
-    cityVillage: { type: String, required: true },
-    pincode: { type: Number, required: true },
-    state: { type: String, required: true },
-    country: { type: String, required: true },
-    streetOrSociety: { type: String, required: true },
-  },
+  Password: { type: String, required: true },
 }, { collection: 'User' });
 
 // Middleware to delete associated data when a user is removed

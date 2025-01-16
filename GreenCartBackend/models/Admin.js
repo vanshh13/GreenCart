@@ -7,13 +7,7 @@ const AdminSchema = new Schema({
   adminEmail: { type: String, required: true },
   adminContact: { type: String},
   Image: { type: String }, 
-  adminAddress: {
-    cityVillage: { type: String, required: true },
-    pincode: { type: Number, required: true },
-    state: { type: String, required: true },
-    country: { type: String, required: true },
-    streetOrSociety: { type: String, required: true },
-  },
+  adminAddress: { type: mongoose.Types.ObjectId, ref: 'Address' },
   user: { type: mongoose.Types.ObjectId, required: true, ref: 'User' },
 }, { collection: 'Admin' });
 

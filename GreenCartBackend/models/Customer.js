@@ -7,13 +7,7 @@ const CustomerSchema = new Schema({
   CustomerEmail: { type: String, required: true },
   CustomerContact: { type: String },
   Image: { type: String }, 
-  CustomerAddress: {
-    cityVillage: { type: String, required: true },
-    pincode: { type: Number, required: true },
-    state: { type: String, required: true },
-    country: { type: String, required: true },
-    streetOrSociety: { type: String, required: true },
-  },
+  CustomerAddress: { type: mongoose.Types.ObjectId, ref: 'Address' },
   user: { type: mongoose.Types.ObjectId, required: true, ref: 'User' },
 }, { collection: 'Customer' });
 
