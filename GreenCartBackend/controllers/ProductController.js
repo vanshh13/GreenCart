@@ -3,13 +3,30 @@ const Product = require('../models/Product');
 // Create a Product
 exports.createProduct = async (req, res) => {
   try {
-    const product = new Product(req.body);
+    const { Image, Name, Description, Price, Available, Stock, Rating, Category, SubCategory } = req.body;
+
+    // Create Product object
+    const product = new Product({
+      Name,
+      Description,
+      Price,
+      Available,
+      Stock,
+      Image,
+      Rating,
+      Category,
+      SubCategory
+    });
+
+    // Save to database
     await product.save();
+
     res.status(201).json({ message: 'Product created successfully', product });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
+
 
 // Read All Products
 exports.getAllProducts = async (req, res) => {

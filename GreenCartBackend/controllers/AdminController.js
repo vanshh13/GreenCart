@@ -10,7 +10,12 @@ exports.createAdmin = async (req, res) => {
     const { adminName, adminEmail, adminContact, adminAddress,user } = req.body;
     // Hash the password
     const hashedPassword = await bcrypt.hash(user.Password, 10); // 10 is the salt rounds
-
+    
+    const existsuser  = await User.findOne({UserEmail: UserEmail}) ;
+    if(existsuser){
+      return res.status(400).json({ message: "Email already exists" });
+    }
+    
     const newuser = new User({
       UserName: adminName,
       UserEmail: adminEmail,

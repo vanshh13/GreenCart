@@ -11,9 +11,6 @@ router.delete('/:userId', ShoppingCartController.deleteShoppingCart); // Delete 
 
 module.exports = router;
 
-
-
-
 // const { authenticateToken, authorizeRole } = require('../middleware/authMiddleware');
 
 // const router = express.Router();
@@ -23,4 +20,3 @@ module.exports = router;
 // router.get('/:userId',authorizeRole('Customer'), ShoppingCartController.getShoppingCarts); // Get Shopping Carts by User ID
 // router.put('/:userId',authorizeRole('Customer'), ShoppingCartController.updateShoppingCart); // Update Shopping Cart
 // router.delete('/:userId',authorizeRole('Customer'), ShoppingCartController.deleteShoppingCart); // Delete Shopping Cart
-

@@ -15,7 +15,12 @@ exports.registerUser = async (req, res) => {
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(Password, 10); // 10 is the salt rounds
-
+    const existsuser  = await User.findOne({UserEmail: UserEmail}) ;
+    
+    if(existsuser){
+      return res.status(400).json({ message: "Email already exists" });
+    }
+    
     // Create a new user with the hashed password
     const newUser = new User({
       UserName,
@@ -87,7 +92,11 @@ exports.createUser = async (req, res) => {
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(Password, 10); // 10 is the salt rounds
-
+    
+    const existsuser  = await User.findOne({UserEmail: UserEmail}) ;
+    if(existsuser){
+      return res.status(400).json({ message: "Email already exists" });
+    }
     // Create a new user with the hashed password
     const user = new User({
       UserName,
