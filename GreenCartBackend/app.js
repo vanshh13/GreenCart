@@ -10,9 +10,11 @@ const shoppingCartRoutes = require('./routes/ShoppingCartRoutes');
 const orderDetailRoutes = require('./routes/OrderDetailRoutes');
 const orderRoutes = require('./routes/OrderRoutes');
 const addressRoutes = require('./routes/AddressRoutes');
+const cors = require('cors');
 
 const app = express();
 
+app.use(cors());
 // Middleware
 app.use(express.json());
 
