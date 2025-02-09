@@ -9,6 +9,11 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Address = require('../models/Address');
 
+exports.oauth = async (req, res) => {
+  const provider = req.params.provider;
+  res.json({ message: `Logging in with ${provider}` });
+};
+
 exports.registerUser = async (req, res) => {
   try {
     const { UserName, UserEmail, Password, UserType } = req.body;
