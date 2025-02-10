@@ -5,8 +5,10 @@ import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { Leaf, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import SocialLogin from './SocialLogin';
+import { useNavigate } from "react-router-dom"; // Import navigation hook
 
 const Login = ({ onSwitchToRegister, showNotification }) => {
+  const navigate = useNavigate(); // Initialize navigation hook
   const [formData, setFormData] = useState({
     UserEmail: "",
     Password: "",
@@ -23,14 +25,31 @@ const Login = ({ onSwitchToRegister, showNotification }) => {
     e.preventDefault();
     try {
       const response = await loginUser(formData);
-      setMessage(response.message || "Login successful!");
-      showNotification("✅ Login successful!");
+      console.log("Login Response:", response.data); // Debugging: Check backend response
+  
+      if (response.data.token) {
+        localStorage.setItem("authToken", response.data.token); // ✅ Store token in localStorage
+        localStorage.setItem("userRole", response.data.role); // ✅ Store user role (admin/customer)
+        
+        showNotification("✅ Login successful!");
+        if(response.data.role === "Admin"){
+          setTimeout(() => {
+            navigate("/admin-dashboard");
+          }, 1000);
+        }  
+        else{
+          setTimeout(() => {
+            navigate("/home"); // ✅ Redirect to home page (fix)
+          }, 1000);
+        }
+      } else {
+        showNotification("❌ Login failed! No token received.");
+      }
     } catch (error) {
-      const errorMsg = error.response?.data?.message || "Login failed!";
-      setMessage(errorMsg);
-      showNotification("❌ Login failed!");
+      showNotification(error.response?.data?.message || "❌ Login failed!");
     }
   };
+  
 
   return (
     <Card className="w-full max-w-md">

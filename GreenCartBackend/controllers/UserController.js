@@ -79,11 +79,11 @@ exports.loginUser = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
-
+    
     res.status(200).json({
       message: 'Login successful',
       token,
-      role: user.role, // Include role for client-side logic
+      role: user.UserType, // Include role for client-side logic
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
