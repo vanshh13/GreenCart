@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import HomePage from "./Home/HomePage"; 
+import HomePage from "./Home/HomePage";
+import Blog from "./Home/Blog";
+
 // import Cart from "./components/Cart"; 
 import Notification from "./components/ui/notification/Notification";
 import DecorativePanel from "./components/ui/DecorativePanel";
@@ -79,6 +81,8 @@ const App = () => {
 
           {/* Catch-All Route (404) */}
           <Route path="*" element={<Navigate to="/" />} />
+          <Route path="/blog" element={<Blog />} />
+
         </Routes>
       </div>
     </Router>

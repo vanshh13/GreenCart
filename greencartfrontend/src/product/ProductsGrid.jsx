@@ -2,7 +2,7 @@ import React from "react";
 import ProductCard from "./ProductCard"; // Ensure this is correctly imported
 
 const ProductsGrid = () => {
-  const products = Array(12).fill({
+  const products = Array(4).fill({
     name: "Organic Product",
     price: 29.99,
     originalPrice: 39.99,
