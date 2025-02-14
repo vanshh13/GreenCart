@@ -4,8 +4,11 @@ import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { Leaf, Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
 import SocialLogin from './SocialLogin';
+import { registerUser } from "../../api";
+import { useNavigate } from "react-router-dom"; // Import navigation hook
 
-const Register = ({ onSwitchToLogin }) => {
+const Register = ({ onSwitchToLogin,showNotification }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     UserName: "",
     UserEmail: "",
@@ -20,13 +23,24 @@ const Register = ({ onSwitchToLogin }) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.Password !== formData.confirmPassword) {
       alert("Passwords do not match!");
       return;
     }
+    const user = {
+      UserName: formData.UserName,
+      UserEmail: formData.UserEmail,
+      Password: formData.Password,
+      UserType: "Customer",
+    }
+    const response = await registerUser(user);
     console.log("Register attempt with:", formData);
+    showNotification("✅ Register successful!");
+    setTimeout(() => {
+      navigate("/authPage");
+    }, 1000);
   };
 
   return (

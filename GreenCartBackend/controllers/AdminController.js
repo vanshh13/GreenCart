@@ -3,51 +3,61 @@ const Address = require('../models/Address');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const Order = require('../models/Order');
+const Product = require('../models/Product');
 
 // Create an Admin along with Address
 exports.createAdmin = async (req, res) => {
   try {
-    const { adminName, adminEmail, adminContact, adminAddress,user } = req.body;
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(user.Password, 10); // 10 is the salt rounds
-    
-    const existsuser  = await User.findOne({UserEmail: UserEmail}) ;
-    if(existsuser){
+    const { adminName, adminEmail, adminContact, adminAddress, Password, ConfirmPassword } = req.body;
+
+    if (Password !== ConfirmPassword) {
+      return res.status(400).json({ message: "Passwords do not match" });
+    }
+
+    // Check if the email already exists
+    const existingUser = await User.findOne({ UserEmail: adminEmail });
+    if (existingUser) {
       return res.status(400).json({ message: "Email already exists" });
     }
-    
-    const newuser = new User({
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(Password, 10);
+
+    // Create user account for the admin
+    const newUser = new User({
       UserName: adminName,
       UserEmail: adminEmail,
-      UserType: 'Admin',
+      UserType: "Admin",
       Password: hashedPassword,
     });
-    await newuser.save();
+    await newUser.save();
 
-    // Step 1: Create the Address linked to Admin
+    // Create Address linked to the Admin
     const newAddress = new Address({
       ...adminAddress,
-      ownerId: newuser._id,  // Assuming user is authenticated
-      ownerModel: 'Admin'
+      ownerId: newUser._id,
+      ownerModel: "Admin",
     });
     await newAddress.save();
 
-    // Step 2: Create Admin with linked Address
+    // Create Admin with linked Address
     const newAdmin = new Admin({
       adminName,
       adminEmail,
       adminContact,
-      adminAddress: newAddress._id,
-      user: newuser._id
+      adminAddress: newAddress._id, // Storing address reference
+      user: newUser._id, // Linking user to admin
     });
 
     await newAdmin.save();
 
-    res.status(201).json({ message: 'Admin created with Address', admin: newAdmin });
+    res.status(201).json({ message: "Admin created successfully", admin: newAdmin });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
+
 
 
 // Get Admin by ID with Address populated
@@ -70,45 +80,37 @@ exports.getAdmin = async (req, res) => {
 // Update Admin and Address
 exports.updateAdmin = async (req, res) => {
   try {
-    const { adminName, adminEmail, adminContact, Image, adminAddress,user } = req.body;
-    
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(user.Password, 10); // 10 is the salt rounds
-    // Step 1: Find the Admin
+    const { adminName, adminEmail, adminContact, Image, adminAddress, user } = req.body;
+
+    // Find the Admin making the request
+    const requestingAdmin = await Admin.findOne({ user: req.user.id });
+
+    // Check if the requester is an admin
+    if (!requestingAdmin || requestingAdmin.role !== 'admin') {
+      return res.status(403).json({ message: 'Unauthorized. Only admins can update admin details.' });
+    }
+
+    // Find the target Admin
     const admin = await Admin.findById(req.params.id);
     if (!admin) {
       return res.status(404).json({ message: 'Admin not found' });
     }
 
-    // Step 2: Update the Address if provided
+    // Update Address if provided
     if (adminAddress) {
-        const address = await Address.findByIdAndUpdate(admin.adminAddress, adminAddress, { new: true });
-        if(!address)
-        {
-          const address = new Address({
-            cityVillage: adminAddress.cityVillage,
-            pincode: adminAddress.pincode,
-            state: adminAddress.state,
-            country: adminAddress.country,
-            streetOrSociety: adminAddress.streetOrSociety,
-            ownerId: adminAddress.ownerId,
-            ownerModel: "Admin",
-          });
-          address.save();
-          admin.adminAddress = address._id;
-        }
+      const address = await Address.findByIdAndUpdate(admin.adminAddress, adminAddress, { new: true });
+      if (!address) {
+        const newAddress = new Address({
+          ...adminAddress,
+          ownerId: admin._id,
+          ownerModel: "Admin",
+        });
+        await newAddress.save();
+        admin.adminAddress = newAddress._id;
       }
-    if(user){
-          const updateduser = new User({
-            _id: user._id,
-            UserName: user.UserName,
-            UserEmail: user.UserEmail,
-            UserType: user.UserType,
-            Password: hashedPassword,
-          });
-          await User.findByIdAndUpdate(admin.user, updateduser,{ new: true });
     }
-    // Step 3: Update Admin fields
+
+    // Update Admin details
     admin.adminName = adminName || admin.adminName;
     admin.adminEmail = adminEmail || admin.adminEmail;
     admin.adminContact = adminContact || admin.adminContact;
@@ -122,20 +124,25 @@ exports.updateAdmin = async (req, res) => {
   }
 };
 
+
 // Delete Admin and its Address
 exports.deleteAdmin = async (req, res) => {
   try {
+    // Find the Admin making the request
+    const requestingAdmin = await Admin.findOne({ user: req.user.id });
+
+    // Only admin can delete
+    if (!requestingAdmin || requestingAdmin.role !== 'admin') {
+      return res.status(403).json({ message: 'Unauthorized. Only admins can delete admin details.' });
+    }
+
     const admin = await Admin.findById(req.params.id);
-    if (!admin) return res.status(404).json({ message: 'Admin not found' });
-    await User.findByIdAndDelete(admin.user);
-    await Address.findByIdAndDelete(admin.adminAddress);
-    // Delete associated Address
-    await Address.deleteOne({ _id: admin.adminAddress });
+    if (!admin) {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
 
-    // Delete Admin
-    await admin.deleteOne();
-
-    res.status(200).json({ message: 'Admin and Address deleted successfully' });
+    await Admin.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: 'Admin deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -156,5 +163,27 @@ exports.getAdmins = async (req, res) => {
     res.status(200).json(admins);
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+};
+
+
+exports.stats  = async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const totalOrders = await Order.countDocuments();
+    const totalProducts = await Product.countDocuments();
+    const totalSales = await Order.aggregate([
+      { $group: { _id: null, total: { $sum: "$totalPrice" } } }
+    ]);
+console.log(totalUsers, totalOrders, totalProducts, totalSales);
+    res.json({
+      totalUsers,
+      totalOrders,
+      totalProducts,
+      totalSales: totalSales[0]?.total || 0
+    });
+  } catch (error) {
+    console.error("Error fetching admin stats:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };

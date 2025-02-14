@@ -20,7 +20,6 @@ const Login = ({ onSwitchToRegister, showNotification }) => {
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
-  
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -28,27 +27,34 @@ const Login = ({ onSwitchToRegister, showNotification }) => {
       console.log("Login Response:", response.data); // Debugging: Check backend response
   
       if (response.data.token) {
-        localStorage.setItem("authToken", response.data.token); // ✅ Store token in localStorage
-        localStorage.setItem("userRole", response.data.role); // ✅ Store user role (admin/customer)
+        // ✅ Store token and set session status
+        localStorage.setItem("authToken", response.data.token);
+        localStorage.setItem("userRole", response.data.role);
         
+        sessionStorage.setItem("hadSession", "true"); // ✅ Mark successful login
+  
         showNotification("✅ Login successful!");
-        if(response.data.role === "Admin"){
-          setTimeout(() => {
-            navigate("/admin-dashboard");
-          }, 1000);
-        }  
-        else{
-          setTimeout(() => {
-            navigate("/home"); // ✅ Redirect to home page (fix)
-          }, 1000);
-        }
+        
+        // ✅ Redirect user based on role
+        setTimeout(() => {
+          navigate(response.data.role === "Admin" ? "/admin-dashboard" : "/home");
+        }, 1000);
       } else {
-        showNotification("❌ Login failed! No token received.");
+        showNotification("❌ Login failed! Invalid credentials");
       }
     } catch (error) {
-      showNotification(error.response?.data?.message || "❌ Login failed!");
+      const errorMessage = error.response?.data?.message || "❌ Invalid email or password!";
+      
+      // ✅ Ensure session isn't marked as expired just because of wrong credentials
+      if (error.response && error.response.status === 401) {
+        sessionStorage.setItem("hadSession", "false");
+      }
+  
+      showNotification(errorMessage);
     }
   };
+  
+  
   
 
   return (

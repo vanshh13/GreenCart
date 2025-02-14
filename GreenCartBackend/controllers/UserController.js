@@ -56,6 +56,20 @@ exports.registerUser = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+exports.logoutUser = (req, res) => {
+  if (req.session) {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Logout failed!" });
+      }
+      res.clearCookie("connect.sid"); // Clear session cookie
+      return res.json({ message: "Logged out successfully!" });
+    });
+  } else {
+    return res.status(400).json({ message: "No active session found." });
+  }
+};
+
 
 exports.loginUser = async (req, res) => {
   try {
@@ -85,6 +99,8 @@ exports.loginUser = async (req, res) => {
       token,
       role: user.UserType, // Include role for client-side logic
     });
+    req.session.userId = user._id; 
+    req.session.userRole = user.role; 
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

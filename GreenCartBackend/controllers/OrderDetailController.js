@@ -103,3 +103,21 @@ exports.deleteOrderDetail = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+
+exports.getOrderDetailByOrderId = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    // Find OrderDetail associated with the given Order ID
+    const orderDetail = await OrderDetail.findOne({ order: orderId }).populate("deliveryAddress");
+
+    if (!orderDetail) {
+      return res.status(404).json({ message: "Order detail not found for this order." });
+    }
+
+    res.status(200).json(orderDetail);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

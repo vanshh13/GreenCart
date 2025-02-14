@@ -36,7 +36,7 @@ const GreenCartIllustration = () => (
   const DecorativePanel = () => (
     <div
       className="hidden lg:flex flex-col items-center justify-center w-full h-full bg-gradient-to-br from-green-600 to-green-700 p-8 relative overflow-hidden"
-      style={{ clipPath: "polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%)" }} // Bullet train shape
+      style={{ clipPath: "polygon(0 0, 85% 0, 100% 50%, 85% 100%,0 100%)" }} // Bullet train shape
     >
       {/* Animated background dots */}
       <div className="absolute inset-0" style={{ opacity: 0.1 }}>

@@ -1,197 +1,195 @@
-import React, { useState, useRef } from 'react';
-import { Upload, X, Edit2, Trash2, Search, Filter } from 'lucide-react';
-import { Card, CardContent } from '../components/ui/Card';
+import React, { useState, useRef } from "react";
+import axios from "axios";
+import { Upload, X } from "lucide-react";
+import AdminNavbar from "../components/AdminNavigation";
+import { motion } from "framer-motion";
 
 const AddProduct = () => {
   const [product, setProduct] = useState({
-    name: '',
-    description: '',
-    price: '',
-    category: '',
-    subcategory: '',
-    stock: '',
-    discount: '',
-    rating: '0',
-    images: []
+    Name: "",
+    Description: "",
+    Price: "",
+    Category: "",
+    SubCategory: "",
+    Stock: "",
+    Available: "true", // Default: Available
+    Rating: "0",
+    Images: [],
   });
-  
+
   const [errors, setErrors] = useState({});
   const fileInputRef = useRef(null);
 
+  // Validate Form
   const validateForm = () => {
     const newErrors = {};
-    if (!product.name) newErrors.name = 'Name is required';
-    if (!product.price) newErrors.price = 'Price is required';
-    if (!product.category) newErrors.category = 'Category is required';
-    if (product.images.length === 0) newErrors.images = 'At least one image is required';
-    
+    if (!product.Name) newErrors.Name = "Name is required";
+    if (!product.Description) newErrors.Description = "Description is required";
+    if (!product.Price) newErrors.Price = "Price is required";
+    if (!product.Category) newErrors.Category = "Category is required";
+    if (!product.SubCategory) newErrors.SubCategory = "SubCategory is required";
+    if (!product.Stock) newErrors.Stock = "Stock is required";
+    if (product.Images.length === 0) newErrors.Images = "At least one image is required";
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // Handle Input Changes
+  const handleChange = (e) => {
+    setProduct({ ...product, [e.target.name]: e.target.value });
+  };
+
+  // Handle Image Upload
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    const newImages = files.map(file => ({
+    const newImages = files.map((file) => ({
       url: URL.createObjectURL(file),
-      file
+      file,
     }));
-    
-    setProduct(prev => ({
+
+    setProduct((prev) => ({
       ...prev,
-      images: [...prev.images, ...newImages]
+      Images: [...prev.Images, ...newImages],
     }));
   };
 
+  // Remove Image
   const removeImage = (index) => {
-    setProduct(prev => ({
+    setProduct((prev) => ({
       ...prev,
-      images: prev.images.filter((_, i) => i !== index)
+      Images: prev.Images.filter((_, i) => i !== index),
     }));
+  };
+
+  // Submit Form
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) return;
+
+    const formData = new FormData();
+    Object.entries(product).forEach(([key, value]) => {
+      if (key === "Images") {
+        value.forEach((image) => formData.append("images", image.file));
+      } else {
+        formData.append(key, value);
+      }
+    });
+
+    try {
+      const response = await axios.post("http://localhost:5000/api/products", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      alert("Product added successfully!");
+      console.log("Product Created:", response.data);
+    } catch (error) {
+      console.error("Error:", error.response?.data);
+      alert("Error adding product: " + (error.response?.data?.error || error.message));
+    }
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <Card>
-        <CardContent className="p-6">
-          <h2 className="text-2xl font-bold mb-6">Add New Product</h2>
-          
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            if (validateForm()) {
-              // Handle form submission
-            }
-          }}>
-            {/* Image Upload */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Product Images</label>
-              <div className="grid grid-cols-4 gap-4 mb-2">
-                {product.images.map((image, index) => (
-                  <div key={index} className="relative">
-                    <img
-                      src={image.url}
-                      alt={`Product ${index + 1}`}
-                      className="w-full h-24 object-cover rounded-lg"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full h-24 border-2 border-dashed rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600"
-                >
-                  <Upload className="h-6 w-6" />
+    <div>
+    <AdminNavbar />
+    <motion.div 
+        initial={{ opacity: 0, y: 50 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ duration: 0.5 }} 
+        className="max-w-4xl mx-auto mt-24 p-6 bg-white shadow-lg rounded-lg">
+    <div className="max-w-4xl mx-auto p-8 bg-white shadow-lg rounded-lg">
+      <h2 className="text-2xl font-semibold mb-4">Add New Product</h2>
+      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+        {/* Name */}
+        <div>
+          <label className="block font-medium">Product Name *</label>
+          <input type="text" name="Name" value={product.Name} onChange={handleChange}
+            className="border rounded px-3 py-2 w-full" required />
+          {errors.Name && <p className="text-red-500">{errors.Name}</p>}
+        </div>
+
+        {/* Description */}
+        <div>
+          <label className="block font-medium">Description *</label>
+          <textarea name="Description" value={product.Description} onChange={handleChange}
+            className="border rounded px-3 py-2 w-full" required />
+          {errors.Description && <p className="text-red-500">{errors.Description}</p>}
+        </div>
+
+        {/* Price */}
+        <div>
+          <label className="block font-medium">Price (₹) *</label>
+          <input type="number" name="Price" value={product.Price} onChange={handleChange}
+            className="border rounded px-3 py-2 w-full" required />
+          {errors.Price && <p className="text-red-500">{errors.Price}</p>}
+        </div>
+
+        {/* Stock */}
+        <div>
+          <label className="block font-medium">Stock Quantity *</label>
+          <input type="number" name="Stock" value={product.Stock} onChange={handleChange}
+            className="border rounded px-3 py-2 w-full" required />
+          {errors.Stock && <p className="text-red-500">{errors.Stock}</p>}
+        </div>
+
+        {/* Category */}
+        <div>
+          <label className="block font-medium">Category *</label>
+          <input type="text" name="Category" value={product.Category} onChange={handleChange}
+            className="border rounded px-3 py-2 w-full" required />
+          {errors.Category && <p className="text-red-500">{errors.Category}</p>}
+        </div>
+
+        {/* SubCategory */}
+        <div>
+          <label className="block font-medium">SubCategory *</label>
+          <input type="text" name="SubCategory" value={product.SubCategory} onChange={handleChange}
+            className="border rounded px-3 py-2 w-full" required />
+          {errors.SubCategory && <p className="text-red-500">{errors.SubCategory}</p>}
+        </div>
+
+        {/* Available */}
+        <div>
+          <label className="block font-medium">Available *</label>
+          <select name="Available" value={product.Available} onChange={handleChange}
+            className="border rounded px-3 py-2 w-full" required>
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        </div>
+
+        {/* Rating */}
+        <div>
+          <label className="block font-medium">Rating</label>
+          <input type="number" name="Rating" value={product.Rating} onChange={handleChange}
+            className="border rounded px-3 py-2 w-full" min="0" max="5" />
+        </div>
+
+        {/* Image Upload */}
+        <div className="col-span-2">
+          <label className="block font-medium">Product Images *</label>
+          <div className="grid grid-cols-5 gap-2">
+            {product.Images.map((Image, index) => (
+              <div key={index} className="relative">
+                <img src={Image.url} alt={`Product ${index + 1}`} className="w-24 h-24 object-cover rounded-lg" />
+                <button type="button" onClick={() => removeImage(index)} className="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full">
+                  <X className="h-4 w-4" />
                 </button>
               </div>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageUpload}
-                multiple
-                accept="image/*"
-                className="hidden"
-              />
-              {errors.images && <p className="text-red-500 text-sm">{errors.images}</p>}
-            </div>
+            ))}
+            <button type="button" onClick={() => fileInputRef.current?.click()} className="border rounded-lg p-3 flex items-center justify-center">
+              <Upload className="h-6 w-6" />
+            </button>
+          </div>
+          <input type="file" ref={fileInputRef} onChange={handleImageUpload} multiple accept="image/*" className="hidden" />
+          {errors.Images && <p className="text-red-500">{errors.Images}</p>}
+        </div>
 
-            {/* Basic Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium mb-2">Product Name</label>
-                <input
-                  type="text"
-                  value={product.name}
-                  onChange={(e) => setProduct(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full p-2 border rounded-lg"
-                />
-                {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Price</label>
-                <input
-                  type="number"
-                  value={product.price}
-                  onChange={(e) => setProduct(prev => ({ ...prev, price: e.target.value }))}
-                  className="w-full p-2 border rounded-lg"
-                />
-                {errors.price && <p className="text-red-500 text-sm">{errors.price}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Category</label>
-                <select
-                  value={product.category}
-                  onChange={(e) => setProduct(prev => ({ ...prev, category: e.target.value }))}
-                  className="w-full p-2 border rounded-lg"
-                >
-                  <option value="">Select Category</option>
-                  <option value="fruits">Fruits</option>
-                  <option value="vegetables">Vegetables</option>
-                </select>
-                {errors.category && <p className="text-red-500 text-sm">{errors.category}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Subcategory</label>
-                <input
-                  type="text"
-                  value={product.subcategory}
-                  onChange={(e) => setProduct(prev => ({ ...prev, subcategory: e.target.value }))}
-                  className="w-full p-2 border rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Stock</label>
-                <input
-                  type="number"
-                  value={product.stock}
-                  onChange={(e) => setProduct(prev => ({ ...prev, stock: e.target.value }))}
-                  className="w-full p-2 border rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Discount (%)</label>
-                <input
-                  type="number"
-                  value={product.discount}
-                  onChange={(e) => setProduct(prev => ({ ...prev, discount: e.target.value }))}
-                  className="w-full p-2 border rounded-lg"
-                />
-              </div>
-            </div>
-
-            {/* Description */}
-            <div className="mt-6">
-              <label className="block text-sm font-medium mb-2">Description</label>
-              <textarea
-                value={product.description}
-                onChange={(e) => setProduct(prev => ({ ...prev, description: e.target.value }))}
-                rows={4}
-                className="w-full p-2 border rounded-lg"
-              />
-            </div>
-
-            {/* Submit Button */}
-            <div className="mt-6">
-              <button
-                type="submit"
-                className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
-              >
-                Add Product
-              </button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+        <button type="submit" className="col-span-2 bg-green-500 text-white p-2 rounded mt-4">Add Product</button>
+      </form>
+    </div>
+    </motion.div>
     </div>
   );
 };

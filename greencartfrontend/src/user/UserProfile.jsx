@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Camera, Save } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/Card';
+import Logout from '../components/authentication/Logout';
 
 const UserProfile = () => {
   const [profileData, setProfileData] = useState({
@@ -212,6 +213,7 @@ const UserProfile = () => {
           </form>
         </CardContent>
       </Card>
+      <Logout/> 
     </div>
   );
 };
