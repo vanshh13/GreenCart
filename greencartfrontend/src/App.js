@@ -5,6 +5,10 @@ import "react-toastify/dist/ReactToastify.css";
 import HomePage from "./Home/HomePage";
 import Blog from "./Home/Blog";
 import Notification from "./components/ui/notification/Notification";
+
+import SearchResults from "./components/ui/SearchResults";
+import DecorativePanel from "./components/ui/DecorativePanel";
+
 import "./App.css";
 import AuthPage from "./components/authentication/AuthPage";
 import AdminDashboard from "./admin/AdminDashboard";
@@ -73,6 +77,7 @@ const App = () => {
         <Routes>
           <Route path="/authpage" element={<AuthPage />} />
           <Route path="/blog" element={<Blog />} />
+
           <Route path="/" element={<HomePage />} />
           <Route path="/home" element={<ProtectedRoute element={<HomePage />} allowedRoles={["Customer"]} />} />
           <Route path="/user/profile" element={<ProtectedRoute element={<UserProfile />} allowedRoles={["Customer"]} />} />
@@ -85,6 +90,12 @@ const App = () => {
           <Route path="/admin/orders" element={<ProtectedRoute element={<OrderManagementDashboard />} allowedRoles={["Admin"]} />} />
           <Route path="/orderdetails/:orderId" element={<OrderDetailPage />} />
           <Route path="*" element={<Navigate to="/" />} />
+
+
+          <Route path="/search" element={<SearchResults />} />
+
+
+
         </Routes>
       </div>
     </Router>
