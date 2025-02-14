@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 
 const images = [
-  "/1.jpg",
   "/2.jpg",
+  "/1.jpg",
   "/3.jpg",
   "/4.jpg",
 ];
@@ -15,18 +15,18 @@ const Carousel = () => {
       setCurrentIndex((prevIndex) =>
         prevIndex === images.length - 1 ? 0 : prevIndex + 1
       );
-    }, 3000); // Auto slide every 3 seconds
+    }, 10000); // Auto slide every 3 seconds
 
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="relative w-full h-[400px] overflow-hidden">
+    <div className="relative w-full h-[600px] overflow-hidden">
       {/* Image Display */}
       <img
         src={images[currentIndex]}
         alt={`Slide ${currentIndex + 1}`}
-        className="w-full h-[400px] object-cover transition-opacity duration-700 ease-in-out"
+        className="w-full h-[600px] object-cover transition-opacity duration-700 ease-in-out"
       />
 
       {/* Left Button */}
