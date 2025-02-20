@@ -5,10 +5,8 @@ import "react-toastify/dist/ReactToastify.css";
 import HomePage from "./Home/HomePage";
 import Blog from "./Home/Blog";
 import Notification from "./components/ui/notification/Notification";
-
 import SearchResults from "./components/ui/SearchResults";
 import DecorativePanel from "./components/ui/DecorativePanel";
-
 import "./App.css";
 import AuthPage from "./components/authentication/AuthPage";
 import AdminDashboard from "./admin/AdminDashboard";
@@ -27,6 +25,10 @@ import ProductCatalog from "./product/ProductCatalog ";
 import AddBlog from "./Blog/AddBlog";
 import ManageBlog from "./Blog/ManageBlog";
 import Logout from "./components/authentication/Logout";
+
+import Wishlist from "./product/Wishlist";
+
+
 const ProtectedRoute = ({ element, allowedRoles }) => {
   const token = localStorage.getItem("authToken");
   const userRole = localStorage.getItem("userRole");
@@ -87,6 +89,8 @@ const App = () => {
           <Route path="/home" element={<ProtectedRoute element={<HomePage />} allowedRoles={["Customer"]} />} />
           <Route path="/user/profile" element={<ProtectedRoute element={<UserProfile />} allowedRoles={["Customer"]} />} />
           <Route path="/user/shopping-cart" element={<ProtectedRoute element={<ShoppingCart />} allowedRoles={["Customer"]} />} />
+          <Route path="/user/wishlist" element={<ProtectedRoute element={<Wishlist />} allowedRoles={["Customer"]} />} />
+
           <Route path="/admin-dashboard" element={<ProtectedRoute element={<AdminDashboard />} allowedRoles={["Admin"]} />} />
           <Route path="/admin/add-product" element={<ProtectedRoute element={<AddProduct />} allowedRoles={["Admin"]} />} />
           <Route path="/admin/product/:productId" element={<ProtectedRoute element={<ProductCatalog />} allowedRoles={["Admin"]} />} />
