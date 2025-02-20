@@ -65,7 +65,14 @@ export const socialLogin = (data) => API.post('/users/oauth/', data);
 
 // Product APIs
 export const fetchProducts = () => API.get('/products');
-export const updateProduct = (id, data) => API.put(`/products/${id}`, data);
+export const fetchProductsbyid = (id, data, token) => 
+  API.get(`/products/${id}`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+export const updateProduct = (id, data, token) => 
+  API.put(`/products/${id}`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 export const deleteProduct = (id, token) => 
   API.delete(`/products/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -75,6 +82,31 @@ export const createProduct = (data) => API.post(`/products/`, data);
 // Admin API
 export const createAdmin = (data, token) => {
   return API.post('/admins/', data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+// Cart API
+export const addProductToCart = (data, token) => {
+  return API.post('/cart-items/addtocart/',data,{
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export const fetchCartItems = (token) => {
+  return API.get('/cart-items', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+export const updateCartItemQuantity = (id, newQuantity, token) => {
+  return API.put(`/cart-items/${id}`, { quantity: newQuantity }, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+export const removeCartItem = (id, token) => {
+  return API.delete(`/cart-items/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 };

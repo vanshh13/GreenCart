@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const Logout = () => {
+const Logout = ({ className, onClick }) => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -26,7 +26,13 @@ const Logout = () => {
   };
 
   return (
-    <button onClick={handleLogout} className="bg-red-500 text-white px-4 py-2 rounded">
+    <button
+      onClick={() => {
+        handleLogout();
+        onClick && onClick();
+      }}
+      className={`block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 ${className}`}
+    >
       Logout
     </button>
   );

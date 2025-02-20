@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ShoppingCart, Package, Loader2 } from "lucide-react";
-
+import { addProductToCart } from "../api";
 const ProductCard = ({ product, addToCart }) => {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -20,13 +20,12 @@ const ProductCard = ({ product, addToCart }) => {
     >
       {/* Image Container */}
       <div className="relative overflow-hidden aspect-square">
-  <img
-    src={product.Images && product.Images.length > 0 ? product.Images[0] : "/default-Image.jpg"}
-    alt={product.Name}
-    className="object-cover w-full h-full transform transition-transform duration-300 hover:scale-110"
-    onError={(e) => (e.target.src = "/default-Image.jpg")} // Fallback if the image doesn't load
-  />
-
+        <img
+          src={product.Images && product.Images.length > 0 ? product.Images[0] : "/default-Image.jpg"}
+          alt={product.Name}
+          className="object-cover w-full h-full transform transition-transform duration-300 hover:scale-110"
+          onError={(e) => (e.target.src = "/default-Image.jpg")} // Fallback if the image doesn't load
+        />
 
         {product.discount && (
           <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
@@ -57,25 +56,24 @@ const ProductCard = ({ product, addToCart }) => {
           <span>{product.quantity > 0 ? 'In Stock' : 'Out of Stock'}</span>
         </div>
         <motion.button
-  whileHover={{ scale: 1.05, backgroundColor: "rgb(16, 185, 129)" }} // Light green on hover
-  whileTap={{ scale: 0.95 }}
-  onClick={handleAddToCart}
-  disabled={isLoading || product.quantity <= 0}
-  className={`w-full py-3 px-4 rounded-lg flex items-center justify-center font-semibold transition-colors duration-300 ${
-    product.quantity > 0
-      ? "bg-emerald-600 text-white"
-      : "bg-gray-300 text-gray-500 cursor-not-allowed"
-  }`}
-  style={{ backgroundColor: product.quantity > 0 ? "rgb(5, 150, 105)" : "rgb(209, 213, 219)" }} // Ensuring base color
->
-  {isLoading ? (
-    <Loader2 className="animate-spin mr-2" size={20} />
-  ) : (
-    <ShoppingCart className="mr-2" size={20} />
-  )}
-  {isLoading ? "Adding..." : "Add to Cart"}
-</motion.button>
-
+          whileHover={{ scale: 1.05, backgroundColor: "rgb(16, 185, 129)" }} // Light green on hover
+          whileTap={{ scale: 0.95 }}
+          onClick={handleAddToCart}
+          disabled={isLoading || product.quantity <= 0}
+          className={`w-full py-3 px-4 rounded-lg flex items-center justify-center font-semibold transition-colors duration-300 ${
+            product.quantity > 0
+              ? "bg-emerald-600 text-white"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          }`}
+          style={{ backgroundColor: product.quantity > 0 ? "rgb(5, 150, 105)" : "rgb(209, 213, 219)" }}
+        >
+          {isLoading ? (
+            <Loader2 className="animate-spin mr-2" size={20} />
+          ) : (
+            <ShoppingCart className="mr-2" size={20} />
+          )}
+          {isLoading ? "Adding..." : "Add to Cart"}
+        </motion.button>
       </div>
     </motion.div>
   );
@@ -102,37 +100,27 @@ const ProductGrid = () => {
 
   const addToCart = async (product) => {
     try {
-      if (!product || !product._id || !product.Price) {
-        console.error("Invalid product data:", product);
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        console.error("User is not authenticated.");
         return;
       }
-
-      const cartItemData = {
-        product: product._id,
+      const cart = {
+        productId: product._id,
         quantity: 1,
-        totalPrice: product.Price * 1,
-      };
-
-      console.log("Sending data to backend:", cartItemData);
-
-      const response = await fetch("http://localhost:5000/api/cart-items", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(cartItemData),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to add item to cart");
+        // totalPrice: product.Price,
       }
 
+      const response = await addProductToCart(cart,token);
+      const data = response.data;
+  
       console.log("Item added successfully:", data);
     } catch (error) {
       console.error("Error adding to cart:", error.message);
     }
   };
+  
+  
 
   if (error) {
     return (

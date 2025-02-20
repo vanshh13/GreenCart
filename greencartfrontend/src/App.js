@@ -21,7 +21,12 @@ import ShoppingCart from "./Shopping/ShoppingCart";
 import UserProfile from "./user/UserProfile";
 import OrderDetailPage from "./order/OrderDetailPage";
 import { jwtDecode } from "jwt-decode";
-
+import AnalysisDashboard from "./admin/AnalysisDashboard";
+import AdminStatistics from "./admin/AdminStatistics";
+import ProductCatalog from "./product/ProductCatalog ";
+import AddBlog from "./Blog/AddBlog";
+import ManageBlog from "./Blog/ManageBlog";
+import Logout from "./components/authentication/Logout";
 const ProtectedRoute = ({ element, allowedRoles }) => {
   const token = localStorage.getItem("authToken");
   const userRole = localStorage.getItem("userRole");
@@ -83,12 +88,19 @@ const App = () => {
           <Route path="/user/profile" element={<ProtectedRoute element={<UserProfile />} allowedRoles={["Customer"]} />} />
           <Route path="/user/shopping-cart" element={<ProtectedRoute element={<ShoppingCart />} allowedRoles={["Customer"]} />} />
           <Route path="/admin-dashboard" element={<ProtectedRoute element={<AdminDashboard />} allowedRoles={["Admin"]} />} />
-          <Route path="/add-product" element={<ProtectedRoute element={<AddProduct />} allowedRoles={["Admin"]} />} />
-          <Route path="/manage-product" element={<ProtectedRoute element={<ManageProducts />} allowedRoles={["Admin"]} />} />
+          <Route path="/admin/add-product" element={<ProtectedRoute element={<AddProduct />} allowedRoles={["Admin"]} />} />
+          <Route path="/admin/product/:productId" element={<ProtectedRoute element={<ProductCatalog />} allowedRoles={["Admin"]} />} />
+          <Route path="admin/manage-product" element={<ProtectedRoute element={<ManageProducts />} allowedRoles={["Admin"]} />} />
           <Route path="/admin/users/add" element={<ProtectedRoute element={<AddAdmin />} allowedRoles={["Admin"]} />} />
           <Route path="/admin/users" element={<ProtectedRoute element={<ManageAdmins />} allowedRoles={["Admin"]} />} />
           <Route path="/admin/orders" element={<ProtectedRoute element={<OrderManagementDashboard />} allowedRoles={["Admin"]} />} />
           <Route path="/orderdetails/:orderId" element={<OrderDetailPage />} />
+          <Route path="/admin/add-blog" element={<ProtectedRoute element={<AddBlog />} allowedRoles={["Admin"]} />}  />
+          <Route path="/admin/manage-blog" element={<ProtectedRoute element={<ManageBlog />} allowedRoles={["Admin"]} />}  />
+          <Route path="/admin/analytics" element={<ProtectedRoute element={<AnalysisDashboard />} allowedRoles={["Admin"]} />} />
+          <Route path="/admin/statistics" element={<ProtectedRoute element={<AdminStatistics />} allowedRoles={["Admin"]} />} />
+          <Route path="/admin/user/profile" element={<ProtectedRoute element={<UserProfile />} allowedRoles={["Admin"]} />} />
+          <Route path="/logout" element={<ProtectedRoute element={<Logout />} allowedRoles={["Admin","Customer"]} />} />
           <Route path="*" element={<Navigate to="/" />} />
 
 

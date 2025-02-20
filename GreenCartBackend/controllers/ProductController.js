@@ -144,6 +144,8 @@ exports.getProduct = async (req, res) => {
 
 exports.updateProduct = async (req, res) => {
   try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized access." });
+
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
 

@@ -1,83 +1,74 @@
 import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { ShoppingCart as CartIcon, Trash2, Plus, Minus, Loader2 } from "lucide-react";
+import { toast } from "react-toastify";
+import { fetchCartItems, updateCartItemQuantity, removeCartItem } from "../api";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/Card"; 
 
 const ShoppingCart = () => {
   const [cartItems, setCartItems] = useState([]);
+  const [totalCartPrice, setTotalCartPrice] = useState(0);  // Track total price from backend
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchCartItems();
+    fetchData();
   }, []);
 
-  const fetchCartItems = async () => {
+  // Fetch cart items and total price
+  const fetchData = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/cart-items");
-      if (!res.ok) throw new Error("Failed to fetch cart items");
-
-      const cartData = await res.json();
-      const products = await Promise.all(
-        cartData.map(async (item) => {
-          if (!item.product) {
-            console.warn("Cart item missing product ID:", item);
-            return item;
-          }
-
-          const productRes = await fetch(
-            `http://localhost:5000/api/products/${item.product}`
-          );
-          if (!productRes.ok) {
-            console.error(`Failed to fetch product ${item.product}`);
-            return { ...item, product: null };
-          }
-
-          const productData = await productRes.json();
-          return { ...item, product: productData };
-        })
-      );
-
-      setCartItems(products);
+      const token = localStorage.getItem("authToken");
+      const response = await fetchCartItems(token);
+      setCartItems(response.data.cartItems || []);
+  
+      // Calculate total price from fetched items
+      const total = (response.data.cartItems || []).reduce((sum, item) => {
+        return sum + (item?.product?.Price || 0) * (item?.quantity || 0);
+      }, 0);
+      setTotalCartPrice(total);
     } catch (error) {
       console.error("Error fetching cart items:", error);
-      setError("Failed to load cart items. Please try again later.");
     } finally {
       setLoading(false);
     }
   };
-
-  const updateQuantity = (id, change) => {
-    setCartItems((prevItems) =>
-      prevItems.map((item) =>
-        item._id === id
-          ? { ...item, quantity: Math.max(1, (item.quantity || 1) + change) }
-          : item
-      )
-    );
-  };
-
-  const removeFromCart = async (id) => {
+  
+  // Update Item Quantity
+  const updateQuantity = async (id, change) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/cart-items/${id}`, {
-        method: "DELETE",
-      });
+      const token = localStorage.getItem("authToken");
+      const updatedItem = cartItems.find((item) => item._id === id);
+      const newQuantity = Math.max(1, updatedItem.quantity + change);
+      
+      const response = await updateCartItemQuantity(id, newQuantity, token);
 
-      if (!res.ok) {
-        throw new Error("Failed to remove item");
-      }
+      setCartItems((prevItems) =>
+        prevItems.map((item) =>
+          item._id === id ? { ...item, quantity: newQuantity } : item
+        )
+      );
 
-      setCartItems((prevItems) => prevItems.filter((item) => item._id !== id));
+      setTotalCartPrice(response.data.shoppingCart.totalPrice); // Update total price from backend
     } catch (error) {
-      console.error("Error removing cart item:", error);
+      console.error("Error updating quantity:", error);
+      toast.error("Could not update item quantity.");
     }
   };
 
-  const calculateTotal = () => {
-    return cartItems.reduce((total, item) => {
-      const price = item.product?.Price || 0;
-      const quantity = item.quantity || 1;
-      return total + price * quantity;
-    }, 0);
+  // Remove Item from Cart
+  const removeFromCart = async (id) => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await removeCartItem(id, token);
+      
+      setCartItems((prevItems) => prevItems.filter((item) => item._id !== id));
+      setTotalCartPrice(response.data.shoppingCart.totalPrice); // Update total price from backend
+
+      toast.success("Item removed from cart.");
+    } catch (error) {
+      console.error("Error removing cart item:", error);
+      toast.error("Failed to remove item.");
+    }
   };
 
   return (
@@ -95,70 +86,62 @@ const ShoppingCart = () => {
             <Loader2 className="animate-spin text-emerald-600" size={40} />
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="py-4 px-6 text-left">Product</th>
-                  <th className="py-4 px-6 text-center">Quantity</th>
-                  <th className="py-4 px-6 text-center">Price</th>
-                  <th className="py-4 px-6 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <AnimatePresence>
-                  {cartItems.map((item) => {
-                    const product = item.product || {};
-                    const imageUrl = product.Images && product.Images.length > 0
-                      ? product.Images[0].startsWith("http")
-                        ? product.Images[0]
-                        : `/images/${product.Images[0].split("\\").pop()}`
-                      : "/images/default.jpg";
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden space-y-6">
+            {cartItems.length > 0 ? (
+              <>
+                {cartItems.map((item) => {
+                  const productImage = item.product.Images?.length > 0 
+                    ? item.product.Images[0] 
+                    : "/placeholder-image.jpg"; 
 
-                    return (
-                      <motion.tr key={item._id} className="border-b border-gray-100">
-                        <td className="py-4 px-6">
-                          <div className="flex items-center space-x-4">
-                            <motion.img
-                              whileHover={{ scale: 1.1 }}
-                              src={imageUrl}
-                              alt={product.Name || "Product"}
-                              className="w-20 h-20 object-cover rounded-lg shadow-md"
-                            />
-                            <div>
-                              <h3 className="font-semibold text-gray-800">
-                                {product.Name || "Unknown Product"}
-                              </h3>
+                  return (
+                    <Card key={item._id} className="border-b border-gray-200 flex items-center p-4">
+                      <img src={productImage} alt={item.product.Name} className="w-24 h-24 object-cover rounded-lg mr-4" />
+                      <div className="flex-1">
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <CardTitle>{item.product.Name}</CardTitle>
+                            <div className="flex space-x-4">
+                              <button onClick={() => updateQuantity(item._id, -1)} className="p-2 bg-gray-200 rounded-full">
+                                <Minus size={16} />
+                              </button>
+                              <span className="font-semibold text-gray-700">{item.quantity}</span>
+                              <button onClick={() => updateQuantity(item._id, 1)} className="p-2 bg-gray-200 rounded-full">
+                                <Plus size={16} />
+                              </button>
                             </div>
                           </div>
-                        </td>
-                        <td className="py-4 px-6 text-center flex justify-center items-center space-x-2">
-                          <button onClick={() => updateQuantity(item._id, -1)} className="p-2 bg-gray-200 rounded-full">
-                            <Minus size={16} />
-                          </button>
-                          <span className="font-semibold text-gray-700">{item.quantity || 1}</span>
-                          <button onClick={() => updateQuantity(item._id, 1)} className="p-2 bg-gray-200 rounded-full">
-                            <Plus size={16} />
-                          </button>
-                        </td>
-                        <td className="py-4 px-6 text-center">
-                          <span className="font-bold text-emerald-600">₹{(product.Price * (item.quantity || 1)).toLocaleString()}</span>
-                        </td>
-                        <td className="py-4 px-6 text-center">
-                          <button onClick={() => removeFromCart(item._id)} className="px-4 py-2 bg-red-500 text-white rounded-lg">
-                            <Trash2 size={16} /> Remove
-                          </button>
-                        </td>
-                      </motion.tr>
-                    );
-                  })}
-                </AnimatePresence>
-              </tbody>
-            </table>
-            <div className="bg-gray-50 p-6 mt-4 text-right">
-              <span className="text-lg font-semibold text-gray-700">Total:</span>
-              <span className="text-2xl font-bold text-emerald-600"> ₹{calculateTotal().toLocaleString()}</span>
-            </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex justify-between">
+                            <CardDescription>
+                              <div>Price per item: ₹{item.product.Price.toLocaleString()}</div>
+                              <div>Total: ₹{(item.product.Price * item.quantity).toLocaleString()}</div>
+                            </CardDescription>
+                            <div>
+                              <button onClick={() => removeFromCart(item._id)} className="px-4 py-2 bg-red-500 text-white rounded-lg">
+                                <Trash2 size={16} /> Remove
+                              </button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </div>
+                    </Card>
+                  );
+                })}
+
+                {/* Updated Total Price Section */}
+                <div className="text-right p-6">
+                <h2 className="text-2xl font-semibold text-gray-800">
+  Total: ₹{(totalCartPrice || 0).toLocaleString()}
+</h2>
+
+
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-4">Your cart is empty</div>
+            )}
           </div>
         )}
       </motion.div>

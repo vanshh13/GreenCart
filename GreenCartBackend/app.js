@@ -11,6 +11,7 @@ const shoppingCartRoutes = require('./routes/ShoppingCartRoutes');
 const orderDetailRoutes = require('./routes/OrderDetailRoutes');
 const orderRoutes = require('./routes/OrderRoutes');
 const addressRoutes = require('./routes/AddressRoutes');
+const blogRoutes = require('./routes/BlogRouters');
 const cors = require('cors');
 
 const app = express();
@@ -37,7 +38,7 @@ app.use('/api/shopping-carts', shoppingCartRoutes);
 app.use('/api/order-details', orderDetailRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/addresses', addressRoutes);
-
+app.use('/api/blogs', blogRoutes);
 // Serve static files
 app.use("/uploads", express.static("uploads"));
 // Start Server

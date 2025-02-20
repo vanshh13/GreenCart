@@ -27,25 +27,25 @@ const Login = ({ onSwitchToRegister, showNotification }) => {
       console.log("Login Response:", response.data); // Debugging: Check backend response
   
       if (response.data.token) {
-        // ✅ Store token and set session status
+        // Store token and set session status
         localStorage.setItem("authToken", response.data.token);
         localStorage.setItem("userRole", response.data.role);
         
         sessionStorage.setItem("hadSession", "true"); // ✅ Mark successful login
   
-        showNotification("✅ Login successful!");
+        showNotification("Login successful!");
         
-        // ✅ Redirect user based on role
+        // Redirect user based on role
         setTimeout(() => {
           navigate(response.data.role === "Admin" ? "/admin-dashboard" : "/home");
         }, 1000);
       } else {
-        showNotification("❌ Login failed! Invalid credentials");
+        showNotification("Login failed! Invalid credentials");
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || "❌ Invalid email or password!";
       
-      // ✅ Ensure session isn't marked as expired just because of wrong credentials
+      // Ensure session isn't marked as expired just because of wrong credentials
       if (error.response && error.response.status === 401) {
         sessionStorage.setItem("hadSession", "false");
       }
