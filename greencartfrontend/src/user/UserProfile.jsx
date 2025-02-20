@@ -1,219 +1,256 @@
 import React, { useState } from 'react';
-import { Camera, Save } from 'lucide-react';
-import { Card, CardContent } from '../components/ui/Card';
+import { User, Mail, Phone, MapPin, Camera, Edit2, Save, X, Calendar, Instagram, Facebook, Twitter, Globe, Gift, Lock, Shield, Bell } from 'lucide-react';
 import Logout from '../components/authentication/Logout';
 
 const UserProfile = () => {
-  const [profileData, setProfileData] = useState({
-    image: '/api/placeholder/150/150',
-    name: '',
-    email: '',
-    contact: '',
-    address: {
-      street: '',
-      city: '',
-      state: '',
-      pincode: ''
+  const [isEditing, setIsEditing] = useState(false);
+  const [activeSection, setActiveSection] = useState('profile');
+  const [userForm, setUserForm] = useState({
+    name: "Sarah Johnson",
+    email: "sarah.j@example.com",
+    phone: "+1 234 567 8900",
+    address: "123 Green Street, Nature City",
+    bio: "Passionate about organic products and sustainable living",
+    birthday: "1990-05-15",
+    instagram: "@sarahj_organic",
+    facebook: "sarah.johnson",
+    twitter: "@sarahj_green",
+    website: "www.sarahsorganics.com",
+    avatar: "/api/placeholder/150/150",
+    preferences: {
+      newsletter: true,
+      notifications: true,
+      twoFactor: false
     }
   });
 
-  const [isEditing, setIsEditing] = useState(false);
-
-  const handleImageChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileData(prev => ({
-          ...prev,
-          image: reader.result
-        }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleInputChange = (e, field, isAddress = false) => {
-    if (isAddress) {
-      setProfileData(prev => ({
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    if (name.includes('.')) {
+      const [parent, child] = name.split('.');
+      setUserForm(prev => ({
         ...prev,
-        address: {
-          ...prev.address,
-          [field]: e.target.value
+        [parent]: {
+          ...prev[parent],
+          [child]: type === 'checkbox' ? checked : value
         }
       }));
     } else {
-      setProfileData(prev => ({
+      setUserForm(prev => ({
         ...prev,
-        [field]: e.target.value
+        [name]: type === 'checkbox' ? checked : value
       }));
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Handle profile update
     setIsEditing(false);
   };
 
+  const sections = [
+    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'social', label: 'Social', icon: Globe },
+    { id: 'privacy', label: 'Privacy', icon: Lock },
+    { id: 'notifications', label: 'Notifications', icon: Bell }
+  ];
+
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <Card>
-        <CardContent className="p-6">
-          <form onSubmit={handleSubmit}>
-            {/* Profile Image Section */}
-            <div className="flex flex-col items-center mb-8">
-              <div className="relative">
-                <img
-                  src={profileData.image}
+    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white p-8 animate-fadeIn">
+      <div className="max-w-5xl mx-auto">
+        {/* Profile Header */}
+        <div className="relative bg-white rounded-2xl p-8 shadow-xl mb-8 transition-all duration-300 hover:shadow-2xl">
+          <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-green-400 to-green-600 rounded-t-2xl"></div>
+          
+          {/* Profile Image and Basic Info */}
+          <div className="relative flex flex-col items-center">
+            <div className="relative group z-10">
+              <div className="w-40 h-40 rounded-full border-4 border-white shadow-xl overflow-hidden transform transition-transform duration-300 group-hover:scale-105">
+                <img 
+                  src={userForm.avatar} 
                   alt="Profile"
-                  className="w-32 h-32 rounded-full object-cover"
+                  className="w-full h-full object-cover"
                 />
-                <label className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-lg cursor-pointer">
-                  <Camera className="h-5 w-5 text-gray-600" />
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                  />
-                </label>
-              </div>
-            </div>
-
-            {/* Personal Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  value={profileData.name}
-                  onChange={(e) => handleInputChange(e, 'name')}
-                  disabled={!isEditing}
-                  className="w-full p-2 border rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={profileData.email}
-                  onChange={(e) => handleInputChange(e, 'email')}
-                  disabled={!isEditing}
-                  className="w-full p-2 border rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Contact Number
-                </label>
-                <input
-                  type="tel"
-                  value={profileData.contact}
-                  onChange={(e) => handleInputChange(e, 'contact')}
-                  disabled={!isEditing}
-                  className="w-full p-2 border rounded-lg"
-                />
-              </div>
-            </div>
-
-            {/* Address Information */}
-            <div className="mt-8">
-              <h3 className="text-lg font-semibold mb-4">Address</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Street/Society Name
-                  </label>
-                  <input
-                    type="text"
-                    value={profileData.address.street}
-                    onChange={(e) => handleInputChange(e, 'street', true)}
-                    disabled={!isEditing}
-                    className="w-full p-2 border rounded-lg"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    City/Village
-                  </label>
-                  <input
-                    type="text"
-                    value={profileData.address.city}
-                    onChange={(e) => handleInputChange(e, 'city', true)}
-                    disabled={!isEditing}
-                    className="w-full p-2 border rounded-lg"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    State
-                  </label>
-                  <input
-                    type="text"
-                    value={profileData.address.state}
-                    onChange={(e) => handleInputChange(e, 'state', true)}
-                    disabled={!isEditing}
-                    className="w-full p-2 border rounded-lg"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Pincode
-                  </label>
-                  <input
-                    type="text"
-                    value={profileData.address.pincode}
-                    onChange={(e) => handleInputChange(e, 'pincode', true)}
-                    disabled={!isEditing}
-                    className="w-full p-2 border rounded-lg"
-                  />
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center">
+                  <Camera className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" />
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="mt-8 flex justify-end space-x-4">
-              {!isEditing ? (
+            <div className="mt-4 text-center">
+              <h1 className="text-3xl font-bold text-gray-800">{userForm.name}</h1>
+              <p className="text-gray-600 mt-2 italic">{userForm.bio}</p>
+              
+              {/* Status Badge */}
+              <div className="mt-3">
+                <span className="px-4 py-1 bg-green-100 text-green-600 rounded-full text-sm font-medium">
+                  Premium Member
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Edit Toggle Button */}
+          <button 
+            onClick={() => setIsEditing(!isEditing)}
+            className="absolute top-36 right-8 p-3 rounded-full bg-white shadow-lg hover:shadow-xl transition-all duration-300 group"
+          >
+            {isEditing ? 
+              <X className="w-5 h-5 text-red-500 group-hover:rotate-90 transition-transform duration-300" /> : 
+              <Edit2 className="w-5 h-5 text-green-500 group-hover:rotate-12 transition-transform duration-300" />
+            }
+          </button>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="flex justify-center mb-8 gap-4">
+          {sections.map(section => (
+            <button
+              key={section.id}
+              onClick={() => setActiveSection(section.id)}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all duration-300 ${
+                activeSection === section.id 
+                  ? 'bg-green-500 text-white shadow-lg transform -translate-y-1'
+                  : 'bg-white text-gray-600 hover:bg-green-50 shadow'
+              }`}
+            >
+              <section.icon className="w-5 h-5" />
+              <span>{section.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Main Content Area */}
+        <div className="bg-white rounded-2xl p-8 shadow-xl transition-all duration-300 hover:shadow-2xl">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {activeSection === 'profile' && (
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Personal Information */}
+                <div className="space-y-6">
+                  <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                    <User className="w-5 h-5 text-green-500" />
+                    Personal Information
+                  </h2>
+                  
+                  {[
+                    { icon: Mail, name: 'email', label: 'Email', value: userForm.email },
+                    { icon: Phone, name: 'phone', label: 'Phone', value: userForm.phone },
+                    { icon: MapPin, name: 'address', label: 'Address', value: userForm.address },
+                    { icon: Gift, name: 'birthday', label: 'Birthday', value: userForm.birthday }
+                  ].map((field) => (
+                    <div key={field.name} className="group">
+                      <label className="text-sm text-gray-600 mb-1 block">{field.label}</label>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg group-hover:bg-green-50 transition-colors">
+                        <field.icon className="w-5 h-5 text-green-500" />
+                        {isEditing ? (
+                          <input
+                            type={field.name === 'birthday' ? 'date' : 'text'}
+                            name={field.name}
+                            value={field.value}
+                            onChange={handleInputChange}
+                            className="flex-1 bg-transparent outline-none border-b-2 border-transparent focus:border-green-500 transition-colors"
+                          />
+                        ) : (
+                          <span className="text-gray-700">{field.value}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Social Links */}
+                <div className="space-y-6">
+                  <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-green-500" />
+                    Social Links
+                  </h2>
+                  
+                  {[
+                    { icon: Instagram, name: 'instagram', label: 'Instagram', value: userForm.instagram },
+                    { icon: Facebook, name: 'facebook', label: 'Facebook', value: userForm.facebook },
+                    { icon: Twitter, name: 'twitter', label: 'Twitter', value: userForm.twitter },
+                    { icon: Globe, name: 'website', label: 'Website', value: userForm.website }
+                  ].map((field) => (
+                    <div key={field.name} className="group">
+                      <label className="text-sm text-gray-600 mb-1 block">{field.label}</label>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg group-hover:bg-green-50 transition-colors">
+                        <field.icon className="w-5 h-5 text-green-500" />
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            name={field.name}
+                            value={field.value}
+                            onChange={handleInputChange}
+                            className="flex-1 bg-transparent outline-none border-b-2 border-transparent focus:border-green-500 transition-colors"
+                          />
+                        ) : (
+                          <span className="text-gray-700">{field.value}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'privacy' && (
+              <div className="space-y-6">
+                <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-green-500" />
+                  Privacy Settings
+                </h2>
+                
+                <div className="grid gap-4">
+                  {[
+                    { name: 'preferences.twoFactor', label: 'Two-Factor Authentication', description: 'Add an extra layer of security to your account' },
+                    { name: 'preferences.newsletter', label: 'Email Newsletter', description: 'Receive updates about organic products and offers' },
+                    { name: 'preferences.notifications', label: 'Push Notifications', description: 'Get instant updates about your orders' }
+                  ].map((setting) => (
+                    <div key={setting.name} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-green-50 transition-colors">
+                      <div>
+                        <h3 className="font-medium text-gray-800">{setting.label}</h3>
+                        <p className="text-sm text-gray-600">{setting.description}</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          name={setting.name}
+                          checked={setting.name.includes('.') ? 
+                            userForm[setting.name.split('.')[0]][setting.name.split('.')[1]] : 
+                            userForm[setting.name]}
+                          onChange={handleInputChange}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Save Changes Button */}
+            {isEditing && (
+              <div className="flex justify-center mt-8">
                 <button
-                  type="button"
-                  onClick={() => setIsEditing(true)}
-                  className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700"
+                  type="submit"
+                  className="flex items-center gap-2 px-8 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all duration-300 transform hover:-translate-y-1 shadow-lg hover:shadow-xl"
                 >
-                  Edit Profile
+                  <Save className="w-5 h-5" />
+                  <span>Save Changes</span>
                 </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setIsEditing(false)}
-                    className="text-gray-600 px-6 py-2 rounded-lg hover:bg-gray-100"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 flex items-center"
-                  >
-                    <Save className="h-5 w-5 mr-2" />
-                    Save Changes
-                  </button>
-                </>
-              )}
-            </div>
+              </div>
+            )}
           </form>
-        </CardContent>
-      </Card>
-      <Logout/> 
+        </div>
+
+        {/* Logout Button */}
+        <div className="flex justify-center mt-8">
+          <button className="flex items-center gap-2 px-6 py-3 text-red-500 hover:text-red-600 transition-all duration-300 transform hover:-translate-y-1">
+            <Logout/>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

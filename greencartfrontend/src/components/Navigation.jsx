@@ -1,8 +1,8 @@
-  import React, { useState, useRef, useEffect } from "react";
-  import { ChevronDown, Search, User, ShoppingCart, Heart, Bell, Menu, X, ChevronUp } from "lucide-react";
-  import { NavLink } from "react-router-dom";
-  import { motion, AnimatePresence } from "framer-motion";
-  import { useNavigate } from "react-router-dom";
+import React, { useState, useRef, useEffect } from "react";
+import { ChevronDown, Search, User, ShoppingCart, Heart, Bell, Menu, X, ChevronUp } from "lucide-react";
+import { NavLink } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import Logout from "./authentication/Logout";
 
   const Navigation = () => {
@@ -256,6 +256,13 @@ import Logout from "./authentication/Logout";
   </AnimatePresence>
 </div>
 
+            {/* Wishlist */}
+            <NavLink
+            to="/user/wishlist"
+            className="p-2 hover:bg-gray-100 rounded-full transition"
+          >
+            <Heart className="h-5 w-5 text-gray-700" />
+          </NavLink>
               {/* Shopping Cart */}
               <NavLink
                 to="/user/shopping-cart"
@@ -283,6 +290,41 @@ import Logout from "./authentication/Logout";
                 )}
               </button>
             </div>
+
+            {/* User Profile
+            <NavLink
+              to="/user/profile"
+              className="p-2 hover:bg-gray-100 rounded-full transition"
+            >
+              <User className="h-5 w-5 text-gray-700" />
+            </NavLink> */}
+
+            {/* Shopping Cart */}
+            {/* <NavLink
+              to="/user/shopping-cart"
+              className="relative p-2 hover:bg-gray-100 rounded-full transition"
+            >
+              <ShoppingCart className="h-5 w-5 text-gray-700" />
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold"
+              >
+                0
+              </motion.span>
+            </NavLink> */}
+
+            {/* Mobile Menu Button */}
+            {/* <button
+              className="md:hidden p-2 hover:bg-gray-100 rounded-full transition"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-6 w-6 text-gray-700" />
+              ) : (
+                <Menu className="h-6 w-6 text-gray-700" />
+              )}
+            </button> */}
           </div>
         </div>
 

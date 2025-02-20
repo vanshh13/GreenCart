@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Input } from "../components/ui/Input";
 import { Star, CheckCircle } from "lucide-react"; // Import missing icons
+import { Droplet as Drop, Sprout as Seedling } from "lucide-react";
 
 import {
   Facebook,
@@ -14,7 +15,11 @@ import {
   Leaf,
   Heart,
   Clock,
-  Shield
+  Shield,
+  Key,
+  Lock,
+  MessageCircle,
+  Headphones
 } from "lucide-react";
 
 const Footer = () => {
@@ -23,24 +28,77 @@ const Footer = () => {
 
   const features = [
     {
-      icon: <Leaf className="w-8 h-8" />,
+      icon: (
+        <div className="relative">
+          {/* Outer rotating circle */}
+          <div className="absolute inset-0 animate-spin-slow">
+            <Drop className="w-3 h-3 absolute -top-1 left-1/2 -translate-x-1/2 text-green-300" />
+            <Drop className="w-3 h-3 absolute top-1/2 -right-1 -translate-y-1/2 rotate-90 text-green-300" />
+            <Drop className="w-3 h-3 absolute -bottom-1 left-1/2 -translate-x-1/2 rotate-180 text-green-300" />
+            <Drop className="w-3 h-3 absolute top-1/2 -left-1 -translate-y-1/2 -rotate-90 text-green-300" />
+          </div>
+          {/* Middle circle with seedlings */}
+          <div className="absolute inset-0 animate-pulse">
+            <div className="absolute inset-0 rounded-full border-2 border-green-200 border-dashed" />
+            <Seedling className="w-4 h-4 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-green-400" />
+          </div>
+          {/* Center leaf */}
+          <Leaf className="w-8 h-8 relative z-10 text-green-500" />
+        </div>
+      ),
       text: "100% Organic",
       description: "Fresh and natural products",
       accent: "from-green-400 to-emerald-500"
     },
     {
-      icon: <Shield className="w-8 h-8" />,
+      icon: (
+        <div className="relative">
+          {/* Outer rotating circle */}
+          <div className="absolute inset-0 animate-spin-slow">
+            <Key className="w-3 h-3 absolute -top-1 left-1/2 -translate-x-1/2 text-blue-300" />
+            <Key className="w-3 h-3 absolute top-1/2 -right-1 -translate-y-1/2 rotate-90 text-blue-300" />
+            <Key className="w-3 h-3 absolute -bottom-1 left-1/2 -translate-x-1/2 rotate-180 text-blue-300" />
+            <Key className="w-3 h-3 absolute top-1/2 -left-1 -translate-y-1/2 -rotate-90 text-blue-300" />
+          </div>
+          {/* Middle circle with lock */}
+          <div className="absolute inset-0 animate-pulse">
+            <div className="absolute inset-0 rounded-full border-2 border-blue-200 border-dashed" />
+            <Lock className="w-4 h-4 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-blue-400" />
+          </div>
+          {/* Center shield */}
+          <Shield className="w-8 h-8 relative z-10 text-blue-500" />
+        </div>
+      ),
       text: "Secure Payment",
       description: "Safe & reliable transactions",
       accent: "from-blue-400 to-indigo-500"
     },
     {
-      icon: <Clock className="w-8 h-8" />,
+      icon: (
+        <div className="relative">
+          {/* Outer rotating circle */}
+          <div className="absolute inset-0 animate-spin-slow">
+            <MessageCircle className="w-3 h-3 absolute -top-1 left-1/2 -translate-x-1/2 text-purple-300" />
+            <MessageCircle className="w-3 h-3 absolute top-1/2 -right-1 -translate-y-1/2 rotate-90 text-purple-300" />
+            <MessageCircle className="w-3 h-3 absolute -bottom-1 left-1/2 -translate-x-1/2 rotate-180 text-purple-300" />
+            <MessageCircle className="w-3 h-3 absolute top-1/2 -left-1 -translate-y-1/2 -rotate-90 text-purple-300" />
+          </div>
+          {/* Middle circle with phone */}
+          <div className="absolute inset-0 animate-pulse">
+            <div className="absolute inset-0 rounded-full border-2 border-purple-200 border-dashed" />
+            <Phone className="w-4 h-4 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-purple-400" />
+          </div>
+          {/* Center headphones */}
+          <Headphones className="w-8 h-8 relative z-10 text-purple-500" />
+        </div>
+      ),
       text: "24/7 Support",
       description: "Always here to help you",
       accent: "from-purple-400 to-violet-500"
-    }
+    },
+
   ];
+  
   
 
   const socialLinks = [
@@ -64,71 +122,70 @@ const Footer = () => {
     {/* Features Section */}
 {/* Features Section */}
 <div className="border-t border-b border-gray-100 bg-white">
-  <div className="max-w-7xl mx-auto px-4 py-16">
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-      {features.map((feature, index) => (
-        <div
-          key={index}
-          className="group relative overflow-hidden p-8 rounded-3xl bg-white border border-gray-100 transition-all duration-700 hover:shadow-2xl hover:-translate-y-2 active:scale-95 active:bg-opacity-80"
-        >
-          {/* Animated background gradient */}
-          <div
-            className={`absolute inset-0 bg-gradient-to-r ${feature.accent} opacity-0 group-hover:opacity-5 transition-opacity duration-700 active:opacity-100`}
-          />
-          
-          {/* Star effect */}
-          <div className="absolute -right-2 -top-2 opacity-0 group-hover:opacity-100 transition-all duration-700 delay-200">
-            <Star className="w-6 h-6 text-yellow-400 animate-pulse" />
-          </div>
-
-          {/* Main content */}
-          <div className="relative flex flex-col items-center justify-center space-y-6 text-center">
-            {/* Icon container with animations */}
-            <div className="relative">
+      <div className="max-w-7xl mx-auto px-4 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {features.map((feature, index) => (
+            <div
+              key={index}
+              className="group relative overflow-hidden p-8 rounded-3xl bg-white border border-gray-100 transition-all duration-700 hover:shadow-2xl hover:-translate-y-2 active:scale-95 active:bg-opacity-80"
+            >
+              {/* Animated background gradient */}
               <div
-                className={`absolute inset-0 bg-gradient-to-r ${feature.accent} opacity-20 blur-xl group-hover:opacity-30 transition-all duration-700 rounded-full scale-150 active:opacity-40`}
+                className={`absolute inset-0 bg-gradient-to-r ${feature.accent} opacity-0 group-hover:opacity-5 transition-opacity duration-700 active:opacity-100`}
               />
-              <div className="relative p-5 rounded-full bg-white shadow-lg transform transition-all duration-700 group-hover:scale-110 group-hover:rotate-6">
-                <div
-                  className={`bg-gradient-to-r ${feature.accent} bg-clip-text text-transparent`}
-                >
-                  {feature.icon}
+              
+              {/* Star effect */}
+              <div className="absolute -right-2 -top-2 opacity-0 group-hover:opacity-100 transition-all duration-700 delay-200">
+                <Star className="w-6 h-6 text-yellow-400 animate-pulse" />
+              </div>
+
+              {/* Main content */}
+              <div className="relative flex flex-col items-center justify-center space-y-6 text-center">
+                {/* Icon container with animations */}
+                <div className="relative">
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-r ${feature.accent} opacity-20 blur-xl group-hover:opacity-30 transition-all duration-700 rounded-full scale-150 active:opacity-40`}
+                  />
+                  <div className="relative p-5 rounded-full bg-white shadow-lg transform transition-all duration-700 group-hover:scale-110 group-hover:rotate-6">
+                    <div
+                      className={`bg-gradient-to-r ${feature.accent} bg-clip-text text-transparent`}
+                    >
+                      {feature.icon}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Text content with animations */}
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold text-gray-800 group-hover:text-gray-900 transition-colors duration-500">
+                    {feature.text}
+                  </h3>
+                  <p className="text-gray-600 group-hover:text-gray-700 transition-colors duration-500">
+                    {feature.description}
+                  </p>
+                </div>
+
+                {/* Animated learn more button */}
+                <div className="opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500 delay-100">
+                  <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-300">
+                    <span>Learn more</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                  </button>
+                </div>
+
+                {/* Success check mark */}
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-500 delay-300">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
                 </div>
               </div>
-            </div>
 
-            {/* Text content with animations */}
-            <div className="space-y-2">
-              <h3 className="text-xl font-semibold text-gray-800 group-hover:text-gray-900 transition-colors duration-500">
-                {feature.text}
-              </h3>
-              <p className="text-gray-600 group-hover:text-gray-700 transition-colors duration-500">
-                {feature.description}
-              </p>
+              {/* Border animation */}
+              <div className="absolute inset-0 border-2 border-transparent group-hover:border-gray-200 rounded-3xl transition-all duration-700 scale-105 group-hover:scale-100" />
             </div>
-
-            {/* Animated learn more button */}
-            <div className="opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500 delay-100">
-              <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-300">
-                <span>Learn more</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
-              </button>
-            </div>
-
-            {/* Success check mark */}
-            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-500 delay-300">
-              <CheckCircle className="w-5 h-5 text-green-500" />
-            </div>
-          </div>
-
-          {/* Border animation */}
-          <div className="absolute inset-0 border-2 border-transparent group-hover:border-gray-200 rounded-3xl transition-all duration-700 scale-105 group-hover:scale-100" />
+          ))}
         </div>
-      ))}
+      </div>
     </div>
-  </div>
-</div>
-
 
     <footer className="bg-gradient-to-b from-white to-gray-900">
 

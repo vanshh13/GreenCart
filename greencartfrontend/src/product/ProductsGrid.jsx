@@ -1,9 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ShoppingCart, Package, Loader2 } from "lucide-react";
 import { addProductToCart } from "../api";
+import { ShoppingCart, Package, Loader2, Heart } from "lucide-react";
+
 const ProductCard = ({ product, addToCart }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [wishlist, setWishlist] = useState([]);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+
+  useEffect(() => {
+    console.log("Wishlist updated:", wishlist);
+
+    const storedWishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
+    setWishlist(storedWishlist);
+    setIsWishlisted(storedWishlist.some((item) => item._id === product._id));
+  }, [product._id]); // <-- use _id consistently
+  
 
   const handleAddToCart = async () => {
     setIsLoading(true);
@@ -11,20 +23,54 @@ const ProductCard = ({ product, addToCart }) => {
     setIsLoading(false);
   };
 
+  const handleAddToWishlist = () => {
+    console.log("Wishlist button clicked!"); // Debug log
+  
+    setWishlist((prevWishlist) => {
+      const isAlreadyWishlisted = prevWishlist.some((item) => item._id === product._id);
+      
+      const updatedWishlist = isAlreadyWishlisted
+        ? prevWishlist.filter((item) => item._id !== product._id)
+        : [...prevWishlist, product];
+  
+      localStorage.setItem("wishlist", JSON.stringify(updatedWishlist));
+      setIsWishlisted(!isAlreadyWishlisted);
+  
+      console.log("Updated Wishlist:", updatedWishlist); // Debug log
+  
+      return updatedWishlist;
+    });
+  };
+  
+  
+  
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2"
+      className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 relative"
     >
+      {/* Wishlist Button (Only One) */}
+      <button 
+  onClick={handleAddToWishlist} 
+  className={`p-2 rounded-full ${isWishlisted ? "text-red-500" : "text-gray-400"}`}
+>
+  {isWishlisted ? "💖" : "♡"} 
+</button>
+
+
+
       {/* Image Container */}
       <div className="relative overflow-hidden aspect-square">
         <img
           src={product.Images && product.Images.length > 0 ? product.Images[0] : "/default-Image.jpg"}
           alt={product.Name}
           className="object-cover w-full h-full transform transition-transform duration-300 hover:scale-110"
-          onError={(e) => (e.target.src = "/default-Image.jpg")} // Fallback if the image doesn't load
+
+          onError={(e) => (e.target.src = "/default-Image.jpg")}
+
         />
 
         {product.discount && (
@@ -39,7 +85,7 @@ const ProductCard = ({ product, addToCart }) => {
         <h3 className="text-lg font-semibold text-gray-800 mb-2 line-clamp-2">
           {product.Name}
         </h3>
-        
+
         <div className="flex items-baseline mb-4">
           <span className="text-2xl font-bold text-emerald-600">
             ₹{product.Price?.toLocaleString()}
@@ -53,10 +99,13 @@ const ProductCard = ({ product, addToCart }) => {
 
         <div className="flex items-center mb-4 text-sm text-gray-600">
           <Package size={16} className="mr-1" />
-          <span>{product.quantity > 0 ? 'In Stock' : 'Out of Stock'}</span>
+          <span>{product.quantity > 0 ? "In Stock" : "Out of Stock"}</span>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.05, backgroundColor: "rgb(16, 185, 129)" }} // Light green on hover
+
+{        /* Add to Cart Button */
+}        <motion.button
+          whileHover={{ scale: 1.05, backgroundColor: "rgb(16, 185, 129)" }}
+
           whileTap={{ scale: 0.95 }}
           onClick={handleAddToCart}
           disabled={isLoading || product.quantity <= 0}
@@ -65,8 +114,10 @@ const ProductCard = ({ product, addToCart }) => {
               ? "bg-emerald-600 text-white"
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
           }`}
+
           style={{ backgroundColor: product.quantity > 0 ? "rgb(5, 150, 105)" : "rgb(209, 213, 219)" }}
-        >
+
+           >
           {isLoading ? (
             <Loader2 className="animate-spin mr-2" size={20} />
           ) : (
@@ -78,6 +129,7 @@ const ProductCard = ({ product, addToCart }) => {
     </motion.div>
   );
 };
+
 
 const ProductGrid = () => {
   const [products, setProducts] = useState([]);
