@@ -39,7 +39,9 @@ exports.createBlog = async (req, res) => {
   
 // Read All Blogs
 exports.getAllBlogs = async (req, res) => {
+  console.log("hello");
   try {
+    console.log("hii");
     const blogs = await Blog.find();
     res.status(200).json(blogs);
   } catch (error) {
@@ -103,3 +105,57 @@ exports.deleteBlog = async (req, res) => {
     res.status(500).json({ error: "Failed to delete blog" });
   }
 };
+
+//Like / Unlike a Blog
+exports.likeBlog = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const blog = await Blog.findById(req.params.id);
+
+    if (!blog) return res.status(404).json({ message: "Blog not found" });
+
+    if (blog.likes.includes(userId)) {
+      // Unlike the blog
+      blog.likes = blog.likes.filter((id) => id.toString() !== userId);
+    } else {
+      // Like the blog
+      blog.likes.push(userId);
+    }
+
+    await blog.save();
+    res.status(200).json({ message: "Like updated", likes: blog.likes.length });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Add a Comment to a Blog
+exports.commentBlog = async (req, res) => {
+  try {
+    const { userId, text } = req.body;
+    const blog = await Blog.findById(req.params.id);
+
+    if (!blog) return res.status(404).json({ message: "Blog not found" });
+
+    blog.comments.push({ userId, text });
+    await blog.save();
+
+    res.status(201).json({ message: "Comment added", comments: blog.comments });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get Comments of a Specific Blog
+exports.getComments = async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id).populate('comments.userId', 'name');
+    if (!blog) return res.status(404).json({ message: "Blog not found" });
+
+    res.status(200).json(blog.comments);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
