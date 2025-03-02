@@ -30,6 +30,7 @@ router.post("/", upload.array("images", 5), ProductController.createProduct);
 
 router.get("/", ProductController.getAllProducts); // Get All Products
 router.get("/:id", ProductController.getProduct); // Get Product by ID
+router.get("/category/:category", ProductController.getProductsByCategory); 
 
 router.put("/:id", authenticateToken, authorizeRole("Admin"), ProductController.updateProduct); // Update Product
 router.delete("/:id", authenticateToken, authorizeRole("Admin"), ProductController.deleteProduct); // Delete Product

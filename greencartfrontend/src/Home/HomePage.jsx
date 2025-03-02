@@ -5,7 +5,7 @@ import Navigation from "../components/Navigation";
 import Carousel from "../components/ui/Carousel";
 import OfferPanel from "../product/OfferPanel";
 import Categories from "../product/Categories";
-import ProductsGrid from "../product/ProductsGrid";
+import ProductHome from "../product/ProductHome";
 import Footer from "../components/Footer";
 
 const Homepage = () => {
@@ -17,7 +17,7 @@ const Homepage = () => {
       <Carousel />
       <OfferPanel />
       <Categories />
-      <ProductsGrid />
+      <ProductHome />
       <Footer />
     </div>
   </ThemeProvider>

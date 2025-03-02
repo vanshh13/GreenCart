@@ -55,17 +55,17 @@ const ManageProducts = () => {
       const token = localStorage.getItem("authToken");
       if (!token) {
         setNotification({ message: "Session expired! Redirecting to login...", show: true });
-        setTimeout(() => window.location.href = "/authpage", 2000);  
+        setTimeout(() => window.location.href = "/authpage", 2000);
         return;
       }
       console.log("Updating product:", editingProduct);
 
-      const response = await updateProduct(editingProduct._id, editingProduct,token);
+      const response = await updateProduct(editingProduct._id, editingProduct, token);
       setProducts(products.map(product => (product._id === editingProduct._id ? response.data.product : product)));
       console.log(response.data.product);
       setEditingProduct(null);
       setNotification({ message: "Product updated successfully!", show: true });
-  
+
     } catch (error) {
       if (error.response && error.response.status === 403) {
         setNotification({ message: "Unauthorized! Please log in again.", show: true });
@@ -75,7 +75,7 @@ const ManageProducts = () => {
       }
     }
   };
-  
+
   // handle Delete product
   const handleDelete = async (productId) => {
     try {
@@ -84,7 +84,7 @@ const ManageProducts = () => {
         setNotification({ message: "Authentication required!", show: true });
         return;
       }
-  
+
       const response = await deleteProduct(productId, token);
       if (response.status === 200) {
         setProducts(products.filter((product) => product._id !== productId));
@@ -99,13 +99,13 @@ const ManageProducts = () => {
     }
   };
 
-  const categories = ['all', 'Fruits', 'Vegetables', 'Grains' , 'Dairy', 'Bakery', 'Meat', 'Seafood']; // Extended categories
+  const categories = ['all', 'Fruits', 'Vegetables', 'Grains', 'Dairy', 'Bakery', 'Oil & Ghee', 'Masala','Other']; // Extended categories
 
   return (
     <div className="min-h-screen bg-gray-50">
       <AnimatePresence>
         {notification.show && (
-          <motion.div 
+          <motion.div
             className="fixed top-0 left-0 w-full flex justify-center z-[1000]"
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
@@ -115,16 +115,16 @@ const ManageProducts = () => {
           </motion.div>
         )}
       </AnimatePresence>
-      
+
       <AdminNavbar />
 
       <motion.div
-  initial={{ opacity: 0, y: 20 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.5 }}
-  className="w-full mt-8 mx-auto" // Removed mx-auto and px-* to allow full width
->
-  <div className="bg-white shadow rounded-xl overflow-hidden px-4 py-8 mt-4 sm:mt-8 lg:mt-12 w-full">
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full mt-8 mx-auto" // Removed mx-auto and px-* to allow full width
+      >
+        <div className="bg-white shadow rounded-xl overflow-hidden px-4 py-8 mt-4 sm:mt-8 lg:mt-12 w-full">
           <div className="p-6 border-b">
             <h1 className="text-2xl font-bold text-gray-800">Manage Products</h1>
             <p className="text-gray-600 mt-1">View, edit, and manage your product inventory</p>
@@ -143,19 +143,19 @@ const ManageProducts = () => {
                 />
                 <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
               </div>
-              
+
               <div className="flex space-x-4 w-full sm:w-auto">
-                <button 
-                  onClick={() => setShowFilters(!showFilters)} 
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
                   className="px-4 py-3 border rounded-lg flex items-center space-x-2 hover:bg-gray-50 transition duration-200"
                 >
                   <Filter size={18} />
                   <span>Filters</span>
                   <ChevronDown size={18} className={`transition-transform duration-200 ${showFilters ? 'rotate-180' : ''}`} />
                 </button>
-                
-                <NavLink 
-                  to="/admin/add-product" 
+
+                <NavLink
+                  to="/admin/add-product"
                   className="px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-200 flex items-center space-x-2"
                 >
                   <Plus size={18} />
@@ -163,11 +163,11 @@ const ManageProducts = () => {
                 </NavLink>
               </div>
             </div>
-            
+
             {/* Filters Section */}
             <AnimatePresence>
               {showFilters && (
-                <motion.div 
+                <motion.div
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
@@ -202,7 +202,7 @@ const ManageProducts = () => {
                         className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Maximum Price</label>
                       <input
@@ -224,7 +224,7 @@ const ManageProducts = () => {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
               </div>
             )}
-            
+
             {error && (
               <div className="bg-red-50 text-red-500 p-4 rounded-lg">
                 <p>{error}</p>
@@ -248,8 +248,8 @@ const ManageProducts = () => {
                   <tbody>
                     <AnimatePresence>
                       {filteredProducts.map((product, index) => (
-                        <motion.tr 
-                          key={product._id} 
+                        <motion.tr
+                          key={product._id}
                           className="border-t hover:bg-gray-50 transition-colors duration-150"
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -259,10 +259,10 @@ const ManageProducts = () => {
                             {product.Images?.length > 0 ? (
                               <div className="flex space-x-1">
                                 {product.Images.slice(0, 2).map((img, index) => (
-                                  <img 
-                                    key={index} 
-                                    src={img} 
-                                    alt={product.Name} 
+                                  <img
+                                    key={index}
+                                    src={img}
+                                    alt={product.Name}
                                     className="w-16 h-16 object-cover rounded-lg shadow-sm transition-transform duration-200 hover:scale-110"
                                   />
                                 ))}
@@ -288,25 +288,24 @@ const ManageProducts = () => {
                             <IndianRupee className="h-4 w-4 mr-1" /> {/* Adjust size and spacing */}
                             {parseFloat(product.Price).toFixed(2)}
                           </td>                          <td className="p-4">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              product.Stock > 10 ? 'bg-green-50 text-green-700' : 
-                              product.Stock > 0 ? 'bg-yellow-50 text-yellow-700' : 
-                              'bg-red-50 text-red-700'
-                            }`}>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.Stock > 10 ? 'bg-green-50 text-green-700' :
+                              product.Stock > 0 ? 'bg-yellow-50 text-yellow-700' :
+                                'bg-red-50 text-red-700'
+                              }`}>
                               {product.Stock} in stock
                             </span>
                           </td>
                           <td className="p-4">
                             <div className="flex space-x-2">
-                              <button 
-                                onClick={() => setEditingProduct(product)} 
+                              <button
+                                onClick={() => setEditingProduct(product)}
                                 className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition duration-150"
                                 title="Edit Product"
                               >
                                 <Edit2 className="h-5 w-5" />
                               </button>
-                              <button 
-                                onClick={() => setConfirmDelete(product._id)} 
+                              <button
+                                onClick={() => setConfirmDelete(product._id)}
                                 className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition duration-150"
                                 title="Delete Product"
                               >
@@ -314,23 +313,23 @@ const ManageProducts = () => {
                               </button>
                               {/* Button to Open Modal */}
                               <button
-                                      onClick={() => setIsModalOpen(true)}
-                                      className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition duration-150"
-                                      title="View Product"
-                                    >
-                                      <Eye className="h-5 w-5" />
-                                    </button>
+                                onClick={() => setIsModalOpen(true)}
+                                className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition duration-150"
+                                title="View Product"
+                              >
+                                <Eye className="h-5 w-5" />
+                              </button>
 
-                                    {/* Render the Modal when isModalOpen is true */}
-                                    {isModalOpen && (
-                                      <ProductCatalog productId={product._id} onClose={() => setIsModalOpen(false)} />
-                                    )}
+                              {/* Render the Modal when isModalOpen is true */}
+                              {isModalOpen && (
+                                <ProductCatalog productId={product._id} onClose={() => setIsModalOpen(false)} />
+                              )}
                             </div>
                           </td>
                         </motion.tr>
                       ))}
                     </AnimatePresence>
-                    
+
                     {filteredProducts.length === 0 && !loading && (
                       <tr>
                         <td colSpan="6" className="text-center py-8 text-gray-500">
@@ -349,13 +348,13 @@ const ManageProducts = () => {
       {/* Edit Product Modal */}
       <AnimatePresence>
         {editingProduct && (
-          <motion.div 
+          <motion.div
             className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50 p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <motion.div 
+            <motion.div
               className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden"
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
@@ -372,21 +371,21 @@ const ManageProducts = () => {
                   {/* Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
-                    <input 
-                      type="text" 
-                      value={editingProduct.Name} 
-                      onChange={(e) => setEditingProduct({...editingProduct, Name: e.target.value})} 
-                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                    <input
+                      type="text"
+                      value={editingProduct.Name}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, Name: e.target.value })}
+                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                     />
                   </div>
 
                   {/* Description */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                    <textarea 
-                      value={editingProduct.Description} 
-                      onChange={(e) => setEditingProduct({...editingProduct, Description: e.target.value})} 
-                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none min-h-[100px]" 
+                    <textarea
+                      value={editingProduct.Description}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, Description: e.target.value })}
+                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none min-h-[100px]"
                     />
                   </div>
 
@@ -394,22 +393,22 @@ const ManageProducts = () => {
                     {/* Price */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
-                      <input 
-                        type="number" 
-                        value={editingProduct.Price} 
-                        onChange={(e) => setEditingProduct({...editingProduct, Price: e.target.value})} 
-                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      <input
+                        type="number"
+                        value={editingProduct.Price}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, Price: e.target.value })}
+                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                       />
                     </div>
 
                     {/* Stock */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
-                      <input 
-                        type="number" 
-                        value={editingProduct.Stock} 
-                        onChange={(e) => setEditingProduct({...editingProduct, Stock: e.target.value})} 
-                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      <input
+                        type="number"
+                        value={editingProduct.Stock}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, Stock: e.target.value })}
+                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                       />
                     </div>
                   </div>
@@ -418,9 +417,9 @@ const ManageProducts = () => {
                     {/* Category */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                      <select 
-                        value={editingProduct.Category} 
-                        onChange={(e) => setEditingProduct({...editingProduct, Category: e.target.value})} 
+                      <select
+                        value={editingProduct.Category}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, Category: e.target.value })}
                         className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                       >
                         {categories.filter(c => c !== 'all').map(category => (
@@ -434,11 +433,11 @@ const ManageProducts = () => {
                     {/* SubCategory */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">SubCategory</label>
-                      <input 
-                        type="text" 
-                        value={editingProduct.SubCategory || ''} 
-                        onChange={(e) => setEditingProduct({...editingProduct, SubCategory: e.target.value})} 
-                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                      <input
+                        type="text"
+                        value={editingProduct.SubCategory || ''}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, SubCategory: e.target.value })}
+                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                       />
                     </div>
                   </div>
@@ -446,15 +445,15 @@ const ManageProducts = () => {
                   {/* Image Upload */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Update Images</label>
-                    <input 
-                      type="file" 
-                      multiple 
-                      accept="image/*" 
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
                       onChange={(e) => {
                         const files = Array.from(e.target.files);
                         const newImageURLs = files.map(file => URL.createObjectURL(file));
-                        setEditingProduct({...editingProduct, Images: [...(editingProduct.Images || []), ...newImageURLs]});
-                      }} 
+                        setEditingProduct({ ...editingProduct, Images: [...(editingProduct.Images || []), ...newImageURLs] });
+                      }}
                       className="w-full p-2 border rounded-lg mb-2"
                     />
                   </div>
@@ -463,16 +462,16 @@ const ManageProducts = () => {
                   <div className="grid grid-cols-3 gap-3">
                     {editingProduct.Images && editingProduct.Images.map((image, index) => (
                       <div key={index} className="relative group">
-                        <img 
-                          src={image} 
-                          alt="Preview" 
-                          className="w-full h-24 object-cover rounded-md border transition duration-200 group-hover:opacity-75" 
+                        <img
+                          src={image}
+                          alt="Preview"
+                          className="w-full h-24 object-cover rounded-md border transition duration-200 group-hover:opacity-75"
                         />
-                        <button 
+                        <button
                           onClick={() => {
                             const updatedImages = editingProduct.Images.filter((_, i) => i !== index);
                             setEditingProduct({ ...editingProduct, Images: updatedImages });
-                          }} 
+                          }}
                           className="absolute top-1 right-1 bg-red-500 text-white text-xs p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                           title="Remove image"
                         >
@@ -485,14 +484,14 @@ const ManageProducts = () => {
               </div>
 
               <div className="p-4 bg-gray-50 border-t flex justify-end space-x-3">
-                <button 
-                  onClick={() => setEditingProduct(null)} 
+                <button
+                  onClick={() => setEditingProduct(null)}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition duration-200"
                 >
                   Cancel
                 </button>
-                <button 
-                  onClick={handleUpdate} 
+                <button
+                  onClick={handleUpdate}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200"
                 >
                   Update Product
@@ -506,13 +505,13 @@ const ManageProducts = () => {
       {/* Confirm Delete Modal */}
       <AnimatePresence>
         {confirmDelete && (
-          <motion.div 
+          <motion.div
             className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50 p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <motion.div 
+            <motion.div
               className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden"
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
@@ -531,14 +530,14 @@ const ManageProducts = () => {
               </div>
 
               <div className="p-4 bg-gray-50 border-t flex justify-end space-x-3">
-                <button 
-                  onClick={() => setConfirmDelete(null)} 
+                <button
+                  onClick={() => setConfirmDelete(null)}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition duration-200"
                 >
                   Cancel
                 </button>
-                <button 
-                  onClick={() => handleDelete(confirmDelete)} 
+                <button
+                  onClick={() => handleDelete(confirmDelete)}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-200"
                 >
                   Delete Product

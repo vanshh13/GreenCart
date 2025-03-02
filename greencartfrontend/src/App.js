@@ -29,6 +29,11 @@ import Logout from "./components/authentication/Logout";
 import Wishlist from "./product/Wishlist";
 import OrderTracking from "./order/OrderTracking";
 
+import ProductsGrid from "./product/ProductsGrid";
+import ProductHome from "./product/ProductHome";
+import CategoryPage from "./product/CategoryPage";
+
+
 import "./App.css";
 
 const ProtectedRoute = ({ element, allowedRoles }) => {
@@ -110,11 +115,18 @@ const App = () => {
             <Route path="/admin/user/profile" element={<ProtectedRoute element={<UserProfile />} allowedRoles={["Admin"]} />} />
             <Route path="/logout" element={<ProtectedRoute element={<Logout />} allowedRoles={["Admin","Customer"]} />} />
             <Route path="*" element={<Navigate to="/" />} />
+            <Route path="/productsgrid" element={<ProtectedRoute element={<ProductsGrid />} allowedRoles={["Customer"]} />} />
+          <Route path="/producthome" element={<ProtectedRoute element={<ProductHome />} allowedRoles={["Customer"]} />} />
+
+          <Route path="/category/:category" element={<CategoryPage />} />
+
 
             <Route path="/search" element={<SearchResults />} />
           </Routes>
         </div>
       </CartProvider> {/* ✅ Closing CartProvider */}
+
+
     </Router>
   );
 };

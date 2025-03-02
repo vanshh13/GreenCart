@@ -2,63 +2,6 @@ const CartItem = require('../models/CartItem');
 const ShoppingCart = require('../models/ShoppingCart');
 const Product = require('../models/Product'); // Ensure Product model is imported
 const jwt = require('jsonwebtoken');
-
-// Create a Cart Item and Add to Shopping Cart
-// exports.createCartItem = async (req, res) => {
-//   try {
-
-//     const { product, quantity, totalPrice } = req.body;
-//     const userId = req.user._id;  // Ensure user info is set in req.user
-
-//     console.log('User ID:', userId);  // Log to ensure the user ID is populated
-
-//     if (!product || !quantity || !totalPrice) {
-//       return res.status(400).json({ error: "Missing required fields" });
-//     }
-
-//     // Check if user already has a shopping cart
-//     let shoppingCart = await ShoppingCart.findOne({ user: userId });
-
-//     if (!shoppingCart) {
-//       // If no cart exists, create a new shopping cart
-//       shoppingCart = new ShoppingCart({
-//         user: userId,
-//         cartItems: [],
-//         totalPrice: 0,
-//       });
-//       await shoppingCart.save();
-//     }
-
-//     // Create the CartItem from request body
-//     const productDetails = await Product.findById(product);  // Assuming product contains the product ID
-
-//     if (!productDetails) return res.status(404).json({ message: "Product not found" });
-
-//     // Calculate the total price for this cart item
-//     totalPrice = productDetails.Price * quantity;
-    
-//     const cartItem = new CartItem({
-//       product: product,
-//       quantity: quantity,
-//       totalPrice: totalPrice,
-//     });
-
-//     await cartItem.save();
-
-//     // Add the new cartItem to the shoppingCart
-//     shoppingCart.cartItems.push(cartItem._id);
-//     shoppingCart.totalPrice += totalPrice;
-
-//     // Save the updated shoppingCart
-//     await shoppingCart.save();
-
-//     // Return the updated shopping cart
-//     res.status(201).json({ message: "Item added to cart successfully", shoppingCart });
-//   } catch (error) {
-//     console.error("Error creating cart item:", error);
-//     res.status(500).json({ error: "Failed to add item to cart" });
-//   }
-// };
 exports.createCartItem = async (req, res) => {
   try {
     const { product, quantity, totalPrice } = req.body;

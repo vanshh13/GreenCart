@@ -236,3 +236,31 @@ exports.deleteProduct = async (req, res) => {
     res.status(500).json({ error: "Failed to delete product" });
   }
 };
+
+// 🔹 Get Products by Category
+exports.getProductsByCategory = async (req, res) => {
+  try {
+    const category = req.params.category;
+
+    if (!category) {
+      return res.status(400).json({ error: "Category is required" });
+    }
+
+    // 🔹 Fetch products including images
+    const products = await Product.find(
+      { Category: { $regex: new RegExp(category, "i") } },
+      "Name Description Price Images Stock Rating Category SubCategory"
+    );
+
+    if (products.length === 0) {
+      return res.status(404).json({ message: "No products found for this category." });
+    }
+
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("Error fetching products by category:", error);
+    res.status(500).json({ error: "Server error while fetching products by category" });
+  }
+};
+
+

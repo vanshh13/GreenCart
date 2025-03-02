@@ -4,6 +4,8 @@ import { NavLink } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import Logout from "./authentication/Logout";
+import { fetchCartItems } from "../api";
+import { useCart } from "../Context/CartContext";
 
   const Navigation = () => {
     const [isShopOpen, setIsShopOpen] = useState(false);
@@ -16,7 +18,7 @@ import Logout from "./authentication/Logout";
     const token = localStorage.getItem("authToken");
     const isAuthenticated = token && token !== "null" && token !== "undefined" && token.length > 0;
     const shopDropdownRef = useRef(null);
-
+    const { cartItems, fetchCart } = useCart();
     // Close dropdown when clicking outside
     useEffect(() => {
       const handleClickOutside = (event) => {
@@ -55,15 +57,19 @@ import Logout from "./authentication/Logout";
     };
     
     const categories = [
-      { name: "Vege", image: "/images/v.jpg", link: "/category/grain" },
+      { name: "Vege", image: "/images/v.jpg", link: "/category/vegetable" },
       { name: "Fruits", image: "/images/f.jpg", link: "/category/fruits" },
       { name: "Dairy", image: "/images/d.jpg", link: "/category/dairy" },
       { name: "Bakery", image: "/images/b.jpg", link: "/category/bakery" },
       { name: "Oil & Ghee", image: "/images/oil.jpg", link: "/category/oil" },
       { name: "Masala", image: "/images/masala.jpg", link: "/category/masala" },
       { name: "Grain", image: "/images/grain.jpg", link: "/category/grain" },
-      { name: "More", image: "", link: "/category/more" },
+      { name: "More", image: "", link: "/category/other" },
     ];
+
+    useEffect(() => {
+      fetchCart();
+    }, []); // Only run on component mount
 
     return (
       <motion.nav
@@ -149,6 +155,8 @@ import Logout from "./authentication/Logout";
       { name: "Offers", path: "/offers" },
       { name: "Blog", path: "/blog" },
       { name: "About", path: "/about" },
+      { name: "All Product", path: "/productsgrid" },
+
     ].map((item, index) => (
       <NavLink
         key={index}
@@ -274,7 +282,7 @@ import Logout from "./authentication/Logout";
                   animate={{ scale: 1 }}
                   className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold"
                 >
-                  0
+                  {cartItems}
                 </motion.span>
               </NavLink>
 
