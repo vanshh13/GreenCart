@@ -7,6 +7,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import AdminNavbar from "../components/AdminNavigation";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { AlertCircle, Check, ChevronDown, Download, Printer, RefreshCw, Search, Sliders } from "lucide-react";
+import {updateOrderStatus } from "../api";
+import Notification from "../components/ui/notification/Notification";
+import useNotification from "../components/ui/notification//useNotification"; 
 
 const OrderManagementDashboard = () => {
   const [orders, setOrders] = useState([]);
@@ -20,7 +23,13 @@ const OrderManagementDashboard = () => {
   const [confirmingOrderStatus, setConfirmingOrderStatus] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
+  const [notification, setNotification] = useState({ message: "", show: false });
+
+const showNotification = (message) => {
+  setNotification({ message, show: true });
+  setTimeout(() => setNotification({ message: "", show: false }), 3000);
+};
+
   const fetchOrders = async () => {
     setIsRefreshing(true);
     try {
@@ -96,18 +105,37 @@ const OrderManagementDashboard = () => {
   
   const confirmStatusChange = async () => {
     if (!confirmingOrderStatus) return;
-
+  
     try {
-      await axios.put(`http://localhost:5000/api/orders/${confirmingOrderStatus.orderId}`, { orderStatus: confirmingOrderStatus.status });
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("Authentication token is missing.");
+  
+      console.log("Updating order status...");
+      console.log("Order ID:", confirmingOrderStatus?.orderId);
+      console.log("New Status:", confirmingOrderStatus?.status);
+  
+      const response = await updateOrderStatus(
+        token,
+        confirmingOrderStatus.orderId,
+        confirmingOrderStatus.status
+      );
+  
+      console.log("Response from server:", response);
+  
+      // ✅ Show success notification
+      showNotification(`✅ Order status updated to ${confirmingOrderStatus.status}!`);
+  
+      // ✅ Update order list in UI
       setOrders(prevOrders =>
-        prevOrders.map(order => 
-          order._id === confirmingOrderStatus.orderId 
-            ? { ...order, orderStatus: confirmingOrderStatus.status } 
+        prevOrders.map(order =>
+          order._id === confirmingOrderStatus.orderId
+            ? { ...order, orderStatus: confirmingOrderStatus.status }
             : order
         )
       );
     } catch (error) {
-      console.error("Error updating order status:", error);
+      console.error("Error updating order status:", error.response?.data || error.message);
+      showNotification("⚠️ Failed to update order status. Please try again.");
     } finally {
       setConfirmingOrderStatus(null);
     }
@@ -181,6 +209,16 @@ const OrderManagementDashboard = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
+    {notification.show && (
+      <Notification
+        message={notification.message}
+        type={notification.type}
+        onClose={() => setNotification({ message: "", type: "", show: false })}
+      />
+    )}
+    <button onClick={() => showNotification("Your order has been placed!", "success")}>
+      Show Notification
+    </button>
       <AdminNavbar />
       
 <motion.div
@@ -297,7 +335,7 @@ const OrderManagementDashboard = () => {
             </AnimatePresence>
 
             {/* Order Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
               <motion.div
                 whileHover={{ scale: 1.03 }}
                 className="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500"
@@ -305,7 +343,17 @@ const OrderManagementDashboard = () => {
                 <h3 className="text-gray-500 text-sm">Total Orders</h3>
                 <p className="text-2xl font-bold">{orders.length}</p>
               </motion.div>
-              
+
+              <motion.div
+                whileHover={{ scale: 1.03 }}
+                className="bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500"
+              >
+                <h3 className="text-gray-500 text-sm">Processing Orders</h3>
+                <p className="text-2xl font-bold">
+                  {orders.filter(o => o.orderStatus === "processing").length}
+                </p>
+              </motion.div>
+
               <motion.div
                 whileHover={{ scale: 1.03 }}
                 className="bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500"

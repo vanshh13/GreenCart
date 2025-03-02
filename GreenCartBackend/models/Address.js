@@ -12,7 +12,7 @@ const AddressSchema = new Schema({
   ownerId: { type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'ownerModel' },
   
   // ownerModel dynamically points to 'Admin', 'Customer', or 'OrderDetail'
-  ownerModel: { type: String, required: true, enum: ['Admin', 'Customer', 'OrderDetail'] }
+  ownerModel: { type: String, required: true, enum: ['Admin', 'Customer'] }
 }, { collection: 'Address' });
 
 module.exports = mongoose.model('Address', AddressSchema);

@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-
 const Schema = mongoose.Schema;
 
 const CustomerSchema = new Schema({
@@ -7,7 +6,7 @@ const CustomerSchema = new Schema({
   CustomerEmail: { type: String, required: true },
   CustomerContact: { type: String },
   Image: { type: String }, 
-  CustomerAddress: { type: mongoose.Types.ObjectId, ref: 'Address' },
+  CustomerAddress: [{ type: mongoose.Types.ObjectId, ref: 'Address' }], // Updated to an array of ObjectIds
   user: { type: mongoose.Types.ObjectId, required: true, ref: 'User' },
 }, { collection: 'Customer' });
 

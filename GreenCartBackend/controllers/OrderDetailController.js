@@ -2,24 +2,52 @@ const OrderDetail = require('../models/OrderDetail');
 const Address = require('../models/Address');
 
 // Create OrderDetail with Address
+// exports.createOrderDetail = async (req, res) => {
+//   try {
+//     const { order, deliveryAddress, totalPrice, deliveryStatus, finalPrice } = req.body;
+
+//     // Step 1: Create Delivery Address
+//     const newAddress = new Address({ ...deliveryAddress, ownerId: order, ownerModel: 'OrderDetail' });
+//     await newAddress.save();
+
+//     // Step 2: Create OrderDetail
+//     const newOrderDetail = new OrderDetail({
+//       order,
+//       deliveryAddress: newAddress._id,
+//       totalPrice,
+//       deliveryStatus,
+//       finalPrice
+//     });
+
+//     await newOrderDetail.save();
+//     res.status(201).json({ message: 'Order detail created successfully', orderDetail: newOrderDetail });
+//   } catch (error) {
+//     res.status(400).json({ error: error.message });
+//   }
+// };
 exports.createOrderDetail = async (req, res) => {
   try {
-    const { order, deliveryAddress, totalPrice, deliveryStatus, finalPrice } = req.body;
+    const { order, deliveryAddress, tax = 0, discount = 0 } = req.body;
 
-    // Step 1: Create Delivery Address
-    const newAddress = new Address({ ...deliveryAddress, ownerId: order, ownerModel: 'OrderDetail' });
-    await newAddress.save();
+    // Fetch Order to get totalPrice
+    const existingOrder = await Order.findById(order);
+    if (!existingOrder) return res.status(404).json({ message: "Order not found" });
 
-    // Step 2: Create OrderDetail
+    // Calculate final price
+    const finalPrice = existingOrder.totalPrice + tax - discount;
+
+    // Create OrderDetail
     const newOrderDetail = new OrderDetail({
       order,
-      deliveryAddress: newAddress._id,
-      totalPrice,
-      deliveryStatus,
+      deliveryAddress,
+      totalPrice: existingOrder.totalPrice,
+      tax,
+      discount,
       finalPrice
     });
 
     await newOrderDetail.save();
+
     res.status(201).json({ message: 'Order detail created successfully', orderDetail: newOrderDetail });
   } catch (error) {
     res.status(400).json({ error: error.message });

@@ -1,10 +1,16 @@
 import React, { useState, useRef, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { Package, ShoppingCart, Users, BarChart2, PieChart, User, ChevronDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import Logout from "./authentication/Logout";
 
 const AdminNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const navigate = useNavigate();
+  const token = localStorage.getItem("authToken");
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const isAuthenticated = token && token !== "null" && token !== "undefined" && token.length > 0;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -17,7 +23,15 @@ const AdminNavbar = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
+      // Toggle profile dropdown
+      const handleProfileClick = (e) => {
+        e.stopPropagation();
+        if (!isAuthenticated) {
+          navigate("/authpage");
+        } else {
+          setIsProfileOpen((prev) => !prev);
+        }
+      };
   return (
     <nav className="bg-white shadow-md fixed top-0 left-0 w-full z-50">
       <div className="max-w-7xl mx-auto px-4">
@@ -72,13 +86,13 @@ const AdminNavbar = () => {
           >
             Profile
           </NavLink>
-          <NavLink
-            to="/logout"
-            className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-            onClick={() => setIsOpen(false)} // Close on link click
-          >
-            Logout
-          </NavLink>
+            {/* Divider for better separation */}
+            <div className="border-t border-gray-200"></div>
+
+            <Logout
+              className="block px-4 py-2 text-gray-700 hover:text-green-600 transition-colors"
+              onClick={() => setIsProfileOpen(false)}
+            />
         </div>
       )}
     </div>

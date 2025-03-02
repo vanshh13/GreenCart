@@ -19,7 +19,7 @@ const Logout = ({ className, onClick }) => {
       sessionStorage.setItem("hadSession", "false");
 
       // ✅ Redirect to home page
-      navigate("/home");
+      navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);
     }

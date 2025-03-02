@@ -1,10 +1,18 @@
-import React, { useState } from 'react';
-import { User, Mail, Phone, MapPin, Camera, Edit2, Save, X, Calendar, Instagram, Facebook, Twitter, Globe, Gift, Lock, Shield, Bell } from 'lucide-react';
+import React, { useEffect,useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+import { User, Mail, Phone, MapPin, Camera, Edit2, Save, X, Calendar, Instagram, Facebook, Twitter, Globe, Gift, Lock, Shield, Bell, Package } from 'lucide-react';
 import Logout from '../components/authentication/Logout';
+import { fetchOrderByUser, updateOrderStatus } from '../api';
+import Notification from "../components/ui/notification/Notification";
 
 const UserProfile = () => {
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [activeSection, setActiveSection] = useState('profile');
+  const [notification, setNotification] = useState(null);
+  const [confirmCancel, setConfirmCancel] = useState(null); // Track order being canceled
+
   const [userForm, setUserForm] = useState({
     name: "Sarah Johnson",
     email: "sarah.j@example.com",
@@ -23,6 +31,25 @@ const UserProfile = () => {
       twoFactor: false
     }
   });
+  const [orders, setOrders] = useState([]);
+// Fetch orders when the "Orders" section is active
+useEffect(() => {
+  if (activeSection === 'orders') {
+    fetchOrders();
+  }
+}, [activeSection]);
+
+const fetchOrders = async () => {
+  try {
+    const token = localStorage.getItem('authToken');
+    const response = await fetchOrderByUser(token);
+    const data = response.data;
+    console.log(data);
+    setOrders(data);
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+  }
+};
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -52,11 +79,68 @@ const UserProfile = () => {
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'social', label: 'Social', icon: Globe },
     { id: 'privacy', label: 'Privacy', icon: Lock },
-    { id: 'notifications', label: 'Notifications', icon: Bell }
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'orders', label: 'Orders', icon: Package }
   ];
 
+  // const onCancel = async (orderId) => {
+  //   if (!window.confirm("Are you sure you want to cancel this order?")) return;
+  //   const token = localStorage.getItem("authToken");
+  
+  //   try {
+  //     await updateOrderStatus(token, orderId, "cancelled"); // Call API to update status
+      
+  //     setNotification({ message: "Order canceled successfully!", type: "success" });
+  
+  //     fetchOrders(); // Refresh the order list
+  //   } catch (error) {
+  //     console.error("Error canceling order:", error);
+  //     setNotification({ message: "Failed to cancel order. Please try again.", type: "error" });
+  //   }
+  // };
+  const handleCancelClick = (orderId) => {
+    setConfirmCancel(orderId); // Store the order ID to be canceled
+    setNotification({
+      message: "Are you sure you want to cancel this order?",
+      type: "confirm",
+    });
+  };
+  
+  const onCancelConfirmed = async () => {
+    if (!confirmCancel) return;
+    const token = localStorage.getItem("authToken");
+  
+    try {
+      await updateOrderStatus(token, confirmCancel, "Cancelled"); // Call API to update status
+      
+      setNotification({ message: "Order canceled successfully!", type: "success" });
+      fetchOrders(); // Refresh the order list
+    } catch (error) {
+      console.error("Error canceling order:", error);
+      setNotification({ message: "Failed to cancel order. Please try again.", type: "error" });
+    }
+  
+    setConfirmCancel(null); // Reset the confirmation state
+  };
+  
+  // Cancel the action if the user chooses "No"
+  const onCancelRejected = () => {
+    setConfirmCancel(null);
+    setNotification(null);
+  };
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white p-8 animate-fadeIn">
+{notification && (
+  <Notification 
+    message={notification.message} 
+    type={notification.type} 
+    onClose={() => setNotification(null)}
+    onConfirm={confirmCancel ? onCancelConfirmed : null} // Show buttons for confirmation
+    onReject={confirmCancel ? onCancelRejected : null} 
+  />
+)}
+
+
       <div className="max-w-5xl mx-auto">
         {/* Profile Header */}
         <div className="relative bg-white rounded-2xl p-8 shadow-xl mb-8 transition-all duration-300 hover:shadow-2xl">
@@ -192,7 +276,19 @@ const UserProfile = () => {
                 </div>
               </div>
             )}
-
+            {/* Save Changes Button */}
+            {isEditing && activeSection === 'profile' && (
+              <div className="flex justify-center mt-8">
+                <button
+                  type="submit"
+                  className="flex items-center gap-2 px-8 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all duration-300 transform hover:-translate-y-1 shadow-lg hover:shadow-xl"
+                >
+                  <Save className="w-5 h-5" />
+                  <span>Save Changes</span>
+                </button>
+              </div>
+            )}
+          </form>
             {activeSection === 'privacy' && (
               <div className="space-y-6">
                 <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
@@ -229,19 +325,75 @@ const UserProfile = () => {
               </div>
             )}
 
-            {/* Save Changes Button */}
-            {isEditing && (
-              <div className="flex justify-center mt-8">
-                <button
-                  type="submit"
-                  className="flex items-center gap-2 px-8 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all duration-300 transform hover:-translate-y-1 shadow-lg hover:shadow-xl"
+{activeSection === 'orders' && (
+  <div>
+    <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2 mb-4">
+      <Package className="w-5 h-5 text-green-500" />
+      Your Orders
+    </h2>
+
+    {orders.length === 0 ? (
+      <p className="text-gray-500">No orders found.</p>
+    ) : (
+      <div className="space-y-4">
+        {orders.map((order) => {
+          console.log(`Order ID: ${order._id}, Status: ${order.orderStatus}`); // Debugging
+
+          return (
+            <div
+              key={order._id}
+              className="p-4 border rounded-lg shadow-sm hover:shadow-md transition cursor-pointer"
+              onClick={() => navigate(`/ordertracking/${order._id}`)}
+            >
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500">Order ID: {order._id}</span>
+                <span
+                  className={`px-3 py-1 text-sm rounded-full ${
+                    order.orderStatus === "delivered"
+                      ? "bg-green-100 text-green-600"
+                      : order.orderStatus === "processing"
+                      ? "bg-yellow-100 text-yellow-600"
+                      : order.orderStatus === "shipped"
+                      ? "bg-blue-100 text-blue-600"
+                      : order.orderStatus === "pending"
+                      ? "bg-gray-100 text-gray-600"
+                      : order.orderStatus === "cancelled"
+                      ? "bg-red-100 text-red-600"
+                      : order.orderStatus === "returned"
+                      ? "bg-purple-100 text-purple-600"
+                      : "bg-gray-200 text-gray-700"
+                  }`}
                 >
-                  <Save className="w-5 h-5" />
-                  <span>Save Changes</span>
-                </button>
+                  {order.orderStatus}
+                </span>
               </div>
-            )}
-          </form>
+
+              <p className="text-gray-700 mt-2">Total: ${order.totalPrice}</p>
+              <p className="text-gray-500 text-sm">
+                Date: {new Date(order.orderDate).toLocaleDateString()}
+              </p>
+
+              {/* Cancel Button - Only for Pending & Processing Orders */}
+              {(order.orderStatus === "pending" || order.orderStatus === "processing") && (
+  <button
+    onClick={(e) => {
+      e.stopPropagation(); // Prevent navigation when clicking the button
+      handleCancelClick(order._id);
+    }}
+    className="mt-3 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition block"
+  >
+    Cancel Order
+  </button>
+)}
+
+            </div>
+          );
+        })}
+      </div>
+    )}
+  </div>
+)}
+
         </div>
 
         {/* Logout Button */}

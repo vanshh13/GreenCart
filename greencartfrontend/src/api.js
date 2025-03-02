@@ -94,6 +94,9 @@ export const addProductToCart = (data, token) => {
 }
 
 export const fetchCartItems = (token) => {
+  if (!token) {
+    throw new Error("Authentication token is missing.");
+  }             
   return API.get('/cart-items', {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -107,6 +110,51 @@ export const updateCartItemQuantity = (id, newQuantity, token) => {
 
 export const removeCartItem = (id, token) => {
   return API.delete(`/cart-items/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+// Order API - Confirm Order
+export const confirmOrder = async (token, orderData) => {
+  console.log("Sending order data:", orderData); // Debugging line
+
+  return API.post("/orders", orderData, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+    .then((res) => res.data)
+    .catch((error) => {
+      console.error("Error confirming order:", error.response?.data || error.message);
+      throw error;
+    });
+};
+
+
+export const updateOrderStatus = async (token, orderId, status) => {
+  return API.put(`/orders/${orderId}`, { status }, {  
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+export const createNewAddress = async (token, addressData) => {
+  return API.post("/addresses", addressData, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+export const fetchUserAddresses = (token) => {
+  return API.get('/addresses/user', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+export const fetchOrderByUser = (token) => {
+  return API.get('/orders/user/' , {
+    headers : { Authorization: `Bearer ${token}`},
+  });
+};
+
+export const orderTracking = (token, orderId) => {
+  return API.get(`/orders/tracking/${orderId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 };
