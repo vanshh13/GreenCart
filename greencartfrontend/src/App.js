@@ -16,13 +16,13 @@ import AddProduct from "./product/AddProduct";
 import ManageProducts from "./product/ManageProduct";
 import OrderManagementDashboard from "./order/OrderManagement";
 import AddAdmin from "./admin/AddAdmin";
-import ManageAdmins from "./admin/ManageAdmins";
+import ManageAdmins from "./admin/ManageUsers";
 import ShoppingCart from "./Shopping/ShoppingCart";
 import UserProfile from "./user/UserProfile";
 import OrderDetailPage from "./order/OrderDetailPage";
 import AnalysisDashboard from "./admin/AnalysisDashboard";
 import AdminStatistics from "./admin/AdminStatistics";
-import ProductCatalog from "./product/ProductCatalog ";
+import ProductCatalog from "./product/ProductCatalog";
 import AddBlog from "./Blog/AddBlog";
 import ManageBlog from "./Blog/ManageBlog";
 import Logout from "./components/authentication/Logout";
@@ -35,6 +35,7 @@ import CategoryPage from "./product/CategoryPage";
 
 
 import "./App.css";
+import NotificationsPage from "./admin/NotificationPage";
 
 const ProtectedRoute = ({ element, allowedRoles }) => {
   const token = localStorage.getItem("authToken");
@@ -104,6 +105,7 @@ const App = () => {
             <Route path="/admin/add-product" element={<ProtectedRoute element={<AddProduct />} allowedRoles={["Admin"]} />} />
             <Route path="/admin/product/:productId" element={<ProtectedRoute element={<ProductCatalog />} allowedRoles={["Admin"]} />} />
             <Route path="admin/manage-product" element={<ProtectedRoute element={<ManageProducts />} allowedRoles={["Admin"]} />} />
+            <Route path="/admin/notification-page" element={<ProtectedRoute element={<NotificationsPage />} allowedRoles={["Admin"]} />} />
             <Route path="/admin/users/add" element={<ProtectedRoute element={<AddAdmin />} allowedRoles={["Admin"]} />} />
             <Route path="/admin/users" element={<ProtectedRoute element={<ManageAdmins />} allowedRoles={["Admin"]} />} />
             <Route path="/admin/orders" element={<ProtectedRoute element={<OrderManagementDashboard />} allowedRoles={["Admin"]} />} />

@@ -25,24 +25,35 @@ const Register = ({ onSwitchToLogin,showNotification }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     if (formData.Password !== formData.confirmPassword) {
       alert("Passwords do not match!");
       return;
     }
+  
     const user = {
       UserName: formData.UserName,
       UserEmail: formData.UserEmail,
       Password: formData.Password,
       UserType: "Customer",
+    };
+  
+    try {
+      const response = await registerUser(user);
+      console.log("Register attempt with:", formData);
+      
+      showNotification("✅ Register successful!");
+      setTimeout(() => {
+        navigate("/authPage");
+      }, 1000);
+    } catch (error) {
+      console.error("Registration error:", error.response?.data?.message || error.message);
+      
+      // Show error message to the user
+      alert(error.response?.data?.message || "❌ Registration failed. Please try again.");
     }
-    const response = await registerUser(user);
-    console.log("Register attempt with:", formData);
-    showNotification("✅ Register successful!");
-    setTimeout(() => {
-      navigate("/authPage");
-    }, 1000);
   };
-
+  
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-0">

@@ -48,7 +48,7 @@ const AuthPage = () => {
             {currentPage === "login" ? (
               <Login onSwitchToRegister={() => setCurrentPage("register")} showNotification={showNotification} />
             ) : (
-              <Register onSwitchToLogin={() => setCurrentPage("login")} />
+              <Register onSwitchToLogin={() => setCurrentPage("login")} showNotification={showNotification} />
             )}
           </div>
         </div>

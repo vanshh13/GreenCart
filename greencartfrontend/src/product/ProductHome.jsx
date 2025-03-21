@@ -33,7 +33,6 @@ const ProductCard = ({ product, addToCart, onNotification }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const { fetchCart } = useCart();
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     if (!token) return;
@@ -218,6 +217,7 @@ const ProductHome = () => {
     type: "success",
     isVisible: false
   });
+  const { fetchCart } = useCart();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -249,6 +249,7 @@ const ProductHome = () => {
       };
 
       const response = await addProductToCart(cart, token);
+      fetchCart();
       return response.data;
     } catch (error) {
       console.error("Error adding to cart:", error.message);

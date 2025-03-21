@@ -6,7 +6,8 @@ import { fetchProducts, updateProduct, deleteProduct } from '../api';
 import { motion, AnimatePresence } from "framer-motion";
 import AdminNavbar from '../components/AdminNavigation';
 import { NavLink } from 'react-router-dom';
-import ProductCatalog from './ProductCatalog ';
+import ProductCatalog from './ProductCatalog';
+
 const ManageProducts = () => {
   const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,13 +17,14 @@ const ManageProducts = () => {
     maxPrice: ''
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [selectedProductId, setSelectedProductId] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [notification, setNotification] = useState({ message: '', show: false });
+  const [notification, setNotification] = useState({ message: '', type: '', show: false });
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [showPreviewAfterUpdate, setShowPreviewAfterUpdate] = useState(false);
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.Name?.toLowerCase().includes(searchTerm.trim().toLowerCase()) ?? false;
@@ -33,6 +35,12 @@ const ManageProducts = () => {
 
     return matchesSearch && matchesCategory && matchesPrice;
   });
+
+  // Custom notification function
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type, show: true });
+    setTimeout(() => setNotification({ message: "", type: "", show: false }), 3000);
+  };
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -49,57 +57,129 @@ const ManageProducts = () => {
     fetchProductData();
   }, []);
 
-  // handle update product
+  useEffect(() => {
+    // Open preview modal after updating if flag is true
+    if (showPreviewAfterUpdate && selectedProductId) {
+      setIsModalOpen(true);
+      setShowPreviewAfterUpdate(false);
+    }
+  }, [showPreviewAfterUpdate, selectedProductId]);
+
   const handleUpdate = async () => {
     try {
       const token = localStorage.getItem("authToken");
       if (!token) {
-        setNotification({ message: "Session expired! Redirecting to login...", show: true });
-        setTimeout(() => window.location.href = "/authpage", 2000);
+        showNotification("Session expired! Redirecting to login...", "error");
+        setTimeout(() => (window.location.href = "/authpage"), 2000);
         return;
       }
+  
       console.log("Updating product:", editingProduct);
-
-      const response = await updateProduct(editingProduct._id, editingProduct, token);
-      setProducts(products.map(product => (product._id === editingProduct._id ? response.data.product : product)));
-      console.log(response.data.product);
+  
+      let uploadedImages = [];
+      const formData = new FormData();
+  
+      // 🔹 Identify New Images (Only files should be uploaded)
+      const newImages = editingProduct.Images.filter((image) => image.file);
+  
+      newImages.forEach((image) => {
+        formData.append("images", image.file);
+      });
+  
+      // 🔹 Upload new images if available
+      if (newImages.length > 0) {
+        const uploadResponse = await axios.post(
+          "http://localhost:5000/api/upload",
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+  
+        console.log("Upload response:", uploadResponse.data);
+  
+        // ✅ Extract the correct array of URLs
+        uploadedImages = uploadResponse.data.images.map((img) => img.imageUrl);
+      }
+  
+      // 🔹 Merge existing images with new uploaded images
+      const updatedProduct = {
+        ...editingProduct,
+        Images: [
+          ...uploadedImages, // ✅ Newly uploaded images
+          ...editingProduct.Images.filter((img) => typeof img === "string"), // ✅ Keep existing Cloudinary URLs
+        ],
+      };
+  
+      console.log("Updated Product:", updatedProduct);
+  
+      // 🔹 Send updated product data to backend
+      const response = await axios.put(
+        `http://localhost:5000/api/products/${editingProduct._id}`,
+        updatedProduct,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+  
+      setProducts(
+        products.map((product) =>
+          product._id === editingProduct._id ? response.data.product : product
+        )
+      );
+  
       setEditingProduct(null);
-      setNotification({ message: "Product updated successfully!", show: true });
-
+      setSelectedProductId(editingProduct._id);
+      setShowPreviewAfterUpdate(true);
+      showNotification("Product updated successfully!", "success");
     } catch (error) {
+      console.error("Error updating product:", error);
       if (error.response && error.response.status === 403) {
-        setNotification({ message: "Unauthorized! Please log in again.", show: true });
-        setTimeout(() => window.location.href = "/authpage", 2000);
+        showNotification("Unauthorized! Please log in again.", "error");
+        setTimeout(() => (window.location.href = "/authpage"), 2000);
       } else {
-        setNotification({ message: "Error updating product!", show: true });
+        showNotification("Error updating product!", "error");
       }
     }
   };
+  
 
   // handle Delete product
   const handleDelete = async (productId) => {
     try {
       const token = localStorage.getItem("authToken");
       if (!token) {
-        setNotification({ message: "Authentication required!", show: true });
+        showNotification("Authentication required!", "error");
         return;
       }
 
       const response = await deleteProduct(productId, token);
       if (response.status === 200) {
         setProducts(products.filter((product) => product._id !== productId));
-        setNotification({ message: "Product and images deleted successfully!", show: true });
+        showNotification("Product and images deleted successfully!", "success");
       } else {
-        setNotification({ message: response.data?.message || "Error deleting product!", show: true });
+        showNotification(response.data?.message || "Error deleting product!", "error");
       }
       setConfirmDelete(null);
     } catch (error) {
       console.error("Delete Error:", error.response?.data || error.message);
-      setNotification({ message: error.response?.data?.message || "Error deleting product!", show: true });
+      showNotification(error.response?.data?.message || "Error deleting product!", "error");
     }
   };
 
-  const categories = ['all', 'Fruits', 'Vegetables', 'Grains', 'Dairy', 'Bakery', 'Oil & Ghee', 'Masala','Other']; // Extended categories
+  // Handle preview button click
+  const handlePreviewClick = (productId) => {
+    setSelectedProductId(productId);
+    setIsModalOpen(true);
+  };
+
+  const categories = ['all', 'Fruits', 'Vegetables', 'Grains', 'Dairy', 'Bakery', 'Oil & Ghee', 'Masala', 'Other'];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -111,7 +191,11 @@ const ManageProducts = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
           >
-            <Notification message={notification.message} onClose={() => setNotification({ message: '', show: false })} />
+            <Notification
+              message={notification.message}
+              type={notification.type}
+              onClose={() => setNotification({ message: "", type: "", show: false })}
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -122,7 +206,7 @@ const ManageProducts = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full mt-8 mx-auto" // Removed mx-auto and px-* to allow full width
+        className="w-full mt-8 mx-auto"
       >
         <div className="bg-white shadow rounded-xl overflow-hidden px-4 py-8 mt-4 sm:mt-8 lg:mt-12 w-full">
           <div className="p-6 border-b">
@@ -285,9 +369,10 @@ const ManageProducts = () => {
                             </span>
                           </td>
                           <td className="p-4 font-medium flex items-center">
-                            <IndianRupee className="h-4 w-4 mr-1" /> {/* Adjust size and spacing */}
+                            <IndianRupee className="h-4 w-4 mr-1" />
                             {parseFloat(product.Price).toFixed(2)}
-                          </td>                          <td className="p-4">
+                          </td>
+                          <td className="p-4">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.Stock > 10 ? 'bg-green-50 text-green-700' :
                               product.Stock > 0 ? 'bg-yellow-50 text-yellow-700' :
                                 'bg-red-50 text-red-700'
@@ -311,19 +396,14 @@ const ManageProducts = () => {
                               >
                                 <Trash2 className="h-5 w-5" />
                               </button>
-                              {/* Button to Open Modal */}
+                              {/* Button to Open Modal with specific product ID */}
                               <button
-                                onClick={() => setIsModalOpen(true)}
+                                onClick={() => handlePreviewClick(product._id)}
                                 className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition duration-150"
                                 title="View Product"
                               >
                                 <Eye className="h-5 w-5" />
                               </button>
-
-                              {/* Render the Modal when isModalOpen is true */}
-                              {isModalOpen && (
-                                <ProductCatalog productId={product._id} onClose={() => setIsModalOpen(false)} />
-                              )}
                             </div>
                           </td>
                         </motion.tr>
@@ -344,6 +424,11 @@ const ManageProducts = () => {
           </div>
         </div>
       </motion.div>
+
+      {/* Product Preview Modal */}
+      {isModalOpen && selectedProductId && (
+        <ProductCatalog productId={selectedProductId} onClose={() => setIsModalOpen(false)} />
+      )}
 
       {/* Edit Product Modal */}
       <AnimatePresence>
@@ -392,7 +477,7 @@ const ManageProducts = () => {
                   <div className="grid grid-cols-2 gap-4">
                     {/* Price */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
                       <input
                         type="number"
                         value={editingProduct.Price}
@@ -441,48 +526,57 @@ const ManageProducts = () => {
                       />
                     </div>
                   </div>
-
-                  {/* Image Upload */}
+                  {/* Upload New Images */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Update Images</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Update Images</label>
                     <input
                       type="file"
                       multiple
                       accept="image/*"
                       onChange={(e) => {
-                        const files = Array.from(e.target.files);
-                        const newImageURLs = files.map(file => URL.createObjectURL(file));
-                        setEditingProduct({ ...editingProduct, Images: [...(editingProduct.Images || []), ...newImageURLs] });
+                        const files = Array.from(e.target.files).map((file) => ({
+                          file,
+                          preview: URL.createObjectURL(file), // ✅ Create preview URL
+                        }));
+
+                        setEditingProduct((prev) => ({
+                          ...prev,
+                          Images: [...(prev.Images || []), ...files], // ✅ Store files with previews
+                        }));
                       }}
                       className="w-full p-2 border rounded-lg mb-2"
                     />
                   </div>
+                  {/* Image Previews */}
+                  <div className="flex flex-wrap gap-3 mt-2">
+                    {editingProduct?.Images?.map((image, index) => {
+                      const imageUrl = image.preview || (typeof image === "string" ? image : "");
 
-                  {/* Preview Images */}
-                  <div className="grid grid-cols-3 gap-3">
-                    {editingProduct.Images && editingProduct.Images.map((image, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={image}
-                          alt="Preview"
-                          className="w-full h-24 object-cover rounded-md border transition duration-200 group-hover:opacity-75"
-                        />
-                        <button
-                          onClick={() => {
-                            const updatedImages = editingProduct.Images.filter((_, i) => i !== index);
-                            setEditingProduct({ ...editingProduct, Images: updatedImages });
-                          }}
-                          className="absolute top-1 right-1 bg-red-500 text-white text-xs p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                          title="Remove image"
-                        >
-                          &times;
-                        </button>
-                      </div>
-                    ))}
+                      return (
+                        <div key={index} className="relative">
+                          <img
+                            src={imageUrl}
+                            alt={`Preview ${index + 1}`}
+                            className="h-24 w-24 object-cover rounded-lg border border-gray-200"
+                          />
+                          <button
+                            onClick={() => {
+                              setEditingProduct((prev) => ({
+                                ...prev,
+                                Images: prev.Images.filter((_, i) => i !== index),
+                              }));
+                            }}
+                            className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full"
+                            title="Remove image"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
-
               <div className="p-4 bg-gray-50 border-t flex justify-end space-x-3">
                 <button
                   onClick={() => setEditingProduct(null)}

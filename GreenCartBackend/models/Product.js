@@ -9,7 +9,7 @@ const ProductSchema = new Schema({
   Available: { type: Boolean, required: false },
   Stock: { type: Number, required: true },
   Images: { type: [String], required: false },
-  Rating: { type: Number, required: true },
+  Rating: { type: Number, default: 0 },
   Category: { type: String, required: true },
   SubCategory: { type: String, required: true },
 }, { collection: 'Product' });

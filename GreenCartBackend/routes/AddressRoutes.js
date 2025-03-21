@@ -3,7 +3,7 @@ const router = express.Router();
 const addressController = require('../controllers/AddressController');
 const {authenticateToken , authorizeRole} = require('../middleware/authMiddleware');
 // Create a New Address
-router.post('/', addressController.createAddress);
+router.post('/', authenticateToken, addressController.createAddress);
 
 // Get All Addresses
 router.get('/', addressController.getAddresses);

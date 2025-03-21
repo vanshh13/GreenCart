@@ -4,6 +4,7 @@ const { authenticateToken, authorizeRole, authorizeAdmin} = require('../middlewa
 const { v2 : cloudinary } = require("cloudinary");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
+const router = express.Router();
 
 // 🔹 Configure Cloudinary
 cloudinary.config({
@@ -22,9 +23,8 @@ const storage = new CloudinaryStorage({
 });
 
 const upload = multer({ storage });
-const router = express.Router();
 
-router.post("/", BlogController.createBlog);
+router.post("/",upload.array("images", 5),authenticateToken, BlogController.createBlog);
 router.get("/", BlogController.getAllBlogs);
 router.get("/:id", BlogController.getBlogById);
 router.put("/:id", authenticateToken, BlogController.updateBlog);

@@ -83,7 +83,7 @@ const AddAdmin = () => {
   };
   
   return (
-    <div>
+    <div className="bg-gray-50 min-h-screen">
     <Notification message={notification} onClose={() => setNotification(null)} />
     <AdminNavbar/>
     <motion.div 

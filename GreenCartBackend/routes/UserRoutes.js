@@ -7,6 +7,8 @@ router.post('/oauth/:provider', UserController.oauth);
 router.post('/login', UserController.loginUser);
 router.post('/register', UserController.registerUser);
 router.post('/logout', UserController.logoutUser);
+router.get('/getuserdetails',authenticateToken, UserController.getUserDetails); // Get users
+router.get('/current',authenticateToken, UserController.getcurrentuser); // Get users
 router.post('/', UserController.createUser); // Create User
 router.get('/', UserController.getusers); // Get users
 router.get('/:id', UserController.getUser); // Get User by ID

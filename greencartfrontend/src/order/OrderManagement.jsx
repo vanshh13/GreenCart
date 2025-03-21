@@ -6,10 +6,9 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import AdminNavbar from "../components/AdminNavigation";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
-import { AlertCircle, Check, ChevronDown, Download, Printer, RefreshCw, Search, Sliders } from "lucide-react";
+import { AlertCircle, Check, Download, Printer, RefreshCw, Search, Sliders } from "lucide-react";
 import {updateOrderStatus } from "../api";
 import Notification from "../components/ui/notification/Notification";
-import useNotification from "../components/ui/notification//useNotification"; 
 
 const OrderManagementDashboard = () => {
   const [orders, setOrders] = useState([]);
@@ -27,7 +26,7 @@ const OrderManagementDashboard = () => {
 
 const showNotification = (message) => {
   setNotification({ message, show: true });
-  setTimeout(() => setNotification({ message: "", show: false }), 3000);
+  setTimeout(() => setNotification({ message: "", show: false }), 9000);
 };
 
   const fetchOrders = async () => {
@@ -122,8 +121,29 @@ const showNotification = (message) => {
   
       console.log("Response from server:", response);
   
-      // ✅ Show success notification
-      showNotification(`✅ Order status updated to ${confirmingOrderStatus.status}!`);
+      // ✅ Show success notification based on status
+      let successMessage = "";
+      switch (confirmingOrderStatus.status) {
+        case "processing":
+          successMessage = "✅ Order is now being processed!";
+          break;
+        case "packed":
+          successMessage = "📦 Order has been packed and ready to ship!";
+          break;
+        case "shipped":
+          successMessage = "🚚 Order has been shipped!";
+          break;
+        case "delivered":
+          successMessage = "🎉 Order has been successfully delivered!";
+          break;
+        case "cancelled":
+          successMessage = "❌ Order has been cancelled.";
+          break;
+        default:
+          successMessage = `✅ Order status updated to ${confirmingOrderStatus.status}!`;
+      }
+  
+      showNotification(successMessage);
   
       // ✅ Update order list in UI
       setOrders(prevOrders =>
@@ -135,22 +155,31 @@ const showNotification = (message) => {
       );
     } catch (error) {
       console.error("Error updating order status:", error.response?.data || error.message);
-      showNotification("⚠️ Failed to update order status. Please try again.");
+  
+      // 🔴 Show different error messages based on the server response
+      let errorMessage = "⚠️ Failed to update order status. Please try again.";
+      if (error.response?.data?.message) {
+        errorMessage = `⚠️ ${error.response.data.message}`;
+      }
+  
+      showNotification(errorMessage);
     } finally {
       setConfirmingOrderStatus(null);
     }
   };
+  
 
   const getStatusColor = (status) => {
     switch (status) {
       case "pending": return "bg-yellow-100 text-yellow-800";
       case "processing": return "bg-blue-100 text-blue-800";
+      case "packed": return "bg-orange-100 text-orange-800";  // 🔹 Added packed status
       case "shipped": return "bg-purple-100 text-purple-800";
       case "delivered": return "bg-green-100 text-green-800";
       case "cancelled": return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
     }
-  };
+  };  
 
   const exportToCSV = () => {
     const headers = ["Order ID", "Customer", "City", "Total Amount", "Status", "Date"];
@@ -303,7 +332,7 @@ const showNotification = (message) => {
                         className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="">All Statuses</option>
-                        {["pending", "processing", "shipped", "delivered", "cancelled"].map(status => (
+                        {["pending", "processing","packed", "shipped", "delivered", "cancelled"].map(status => (
                           <option key={status} value={status}>
                             {status.charAt(0).toUpperCase() + status.slice(1)}
                           </option>
@@ -311,14 +340,26 @@ const showNotification = (message) => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Order Date</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Order Date
+                    </label>
+                    <div className="flex items-center gap-2">
                       <input
                         type="date"
                         value={dateFilter}
-                        onChange={e => setDateFilter(e.target.value)}
+                        onChange={(e) => setDateFilter(e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       />
+                      {dateFilter && (
+                        <button
+                          onClick={() => setDateFilter("")}
+                          className="p-2 text-red-600 border border-red-400 rounded-md hover:bg-red-100"
+                        >
+                          Clear
+                        </button>
+                      )}
                     </div>
+                  </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
                       <input
@@ -335,13 +376,23 @@ const showNotification = (message) => {
             </AnimatePresence>
 
             {/* Order Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mb-6">
               <motion.div
                 whileHover={{ scale: 1.03 }}
                 className="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500"
               >
                 <h3 className="text-gray-500 text-sm">Total Orders</h3>
                 <p className="text-2xl font-bold">{orders.length}</p>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ scale: 1.03 }}
+                className="bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500"
+              >
+                <h3 className="text-gray-500 text-sm">Pending Orders</h3>
+                <p className="text-2xl font-bold">
+                  {orders.filter(o => o.orderStatus === "pending").length}
+                </p>
               </motion.div>
 
               <motion.div
@@ -358,9 +409,9 @@ const showNotification = (message) => {
                 whileHover={{ scale: 1.03 }}
                 className="bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500"
               >
-                <h3 className="text-gray-500 text-sm">Pending Orders</h3>
+                <h3 className="text-gray-500 text-sm">Packed Orders</h3>
                 <p className="text-2xl font-bold">
-                  {orders.filter(o => o.orderStatus === "pending").length}
+                  {orders.filter(o => o.orderStatus === "packed").length}
                 </p>
               </motion.div>
               
@@ -376,20 +427,21 @@ const showNotification = (message) => {
               
               <motion.div
                 whileHover={{ scale: 1.03 }}
-                className="bg-white p-4 rounded-lg shadow border-l-4 border-red-500"
-              >
-                <h3 className="text-gray-500 text-sm">Cancelled Orders</h3>
-                <p className="text-2xl font-bold">
-                  {orders.filter(o => o.orderStatus === "cancelled").length}
-                </p>
-              </motion.div>
-              <motion.div
-                whileHover={{ scale: 1.03 }}
                 className="bg-white p-4 rounded-lg shadow border-l-4 border-green-500"
               >
                 <h3 className="text-gray-500 text-sm">shipped Orders</h3>
                 <p className="text-2xl font-bold">
                   {orders.filter(o => o.orderStatus === "shipped").length}
+                </p>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ scale: 1.03 }}
+                className="bg-white p-4 rounded-lg shadow border-l-4 border-red-500"
+              >
+                <h3 className="text-gray-500 text-sm">Cancelled Orders</h3>
+                <p className="text-2xl font-bold">
+                  {orders.filter(o => o.orderStatus === "cancelled").length}
                 </p>
               </motion.div>
             </div>
@@ -431,7 +483,7 @@ const showNotification = (message) => {
                             </span>
                           </td>
                           <td className="p-4 text-sm">
-                            {new Date(order.orderDate).toLocaleDateString()}
+                          {new Date(order.orderDate).toLocaleDateString("en-GB")}
                           </td>
                           <td className="p-4 text-sm">
                             <div className="flex items-center space-x-3">
@@ -540,7 +592,7 @@ const showNotification = (message) => {
                   <div className="grid grid-cols-3 items-center">
                     <span className="text-sm font-medium text-gray-500">Order Date:</span>
                     <span className="col-span-2 text-sm text-gray-900">
-                      {new Date(selectedOrder.orderDate).toLocaleString()}
+                    {new Date(selectedOrder.orderDate).toLocaleDateString("en-GB")}
                     </span>
                   </div>
                 </div>
@@ -602,7 +654,7 @@ const showNotification = (message) => {
                   onChange={(e) => setConfirmingOrderStatus({...confirmingOrderStatus, status: e.target.value})}
                   className="w-full p-2 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 >
-                  {["pending", "processing", "shipped", "delivered", "cancelled"].map(status => (
+                  {["pending", "processing","packed" ,"shipped", "delivered", "cancelled"].map(status => (
                     <option key={status} value={status}>
                       {status.charAt(0).toUpperCase() + status.slice(1)}
                     </option>

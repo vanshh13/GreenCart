@@ -18,7 +18,7 @@ const ShoppingCart = () => {
 
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [paymentMethod, setPaymentMethod] = useState("Cash on Delivery");
   const [newAddressData, setNewAddressData] = useState({
     cityVillage: "",
     pincode: "",
@@ -66,25 +66,28 @@ const ShoppingCart = () => {
   
   
 
-  const handleCreateNewAddress = async () => {
-    try {
-      if (!newAddressData.cityVillage || !newAddressData.pincode || !newAddressData.state || !newAddressData.country || !newAddressData.streetOrSociety) {
-        toast.error("Please fill in all address fields.");
-        return;
-      }
-
-      const token = localStorage.getItem("authToken");
-      const response = await createNewAddress(token, newAddressData);
-
-      if (response.status === 201) {
-        toast.success("Address created successfully!");
-        setSelectedAddressId(response.data.address._id);
-        setIsAddressModalOpen(false); // Close modal after saving
-      }
-    } catch (error) {
-      console.error("Error creating address:", error);
+// ✅ Function to handle address creation
+const handleCreateNewAddress = async () => {
+  try {
+    if (!Object.values(newAddressData).every(field => field.trim() !== "")) {
+      toast.error("Please fill in all address fields.");
+      return;
     }
-  };
+    console.log("Creating new address:", newAddressData);
+    const token = localStorage.getItem("authToken");
+    const response = await createNewAddress(token, newAddressData);
+
+    if (response.status === 201) {
+      toast.success("Address created successfully!");
+      setSelectedAddressId(response.data.address._id);
+      setIsAddressModalOpen(false); // Close modal after saving
+      fetchSavedAddresses(); // Refresh saved addresses
+    }
+  } catch (error) {
+    console.error("Error creating address:", error);
+    toast.error("Failed to create address.");
+  }
+};
   
   const updateQuantity = async (id, change) => {
     try {
@@ -153,6 +156,7 @@ const ShoppingCart = () => {
           quantity: item.quantity,
           price: item.product.Price,
         })),
+        paymentMethod: paymentMethod,
         totalPrice: totalCartPrice,
         orderStatus: "pending",
         OrderDetail: {
@@ -181,52 +185,6 @@ const ShoppingCart = () => {
       setIsSubmitting(false);
     }
   };
-  
-  
-  // const handleConfirmOrder = async () => {
-  //   try {
-  //     if (!selectedAddressId) {
-  //       toast.error("Please select a delivery address");
-  //       return;
-  //     }
-
-  //     setIsSubmitting(true);
-  //     const token = localStorage.getItem("authToken");
-  //     const userId = localStorage.getItem("userId");
-
-  //     const orderData = {
-  //       user: userId,
-  //       orderItems: cartItems.map((item) => ({
-  //         product: item.product._id,
-  //         quantity: item.quantity,
-  //         price: item.product.Price,
-  //       })),
-  //       totalPrice: totalCartPrice,
-  //       orderStatus: "pending",
-  //       orderDate: new Date().toISOString(),
-  //       OrderDetail: {
-  //         deliveryAddress: selectedAddressId,
-  //         totalPrice: totalCartPrice,
-  //         paymentMethod: paymentMethod,
-  //         tax: 0,
-  //         discount: 0,
-  //         finalPrice: totalCartPrice,
-  //       },
-  //     };
-
-  //     const response = await confirmOrder(token, orderData);
-  //     toast.success("Order confirmed successfully!");
-  //     setIsOrderConfirmed(true);
-  //     setCartItems([]);
-  //     setTotalCartPrice(0);
-  //   } catch (error) {
-  //     console.error("Error confirming order:", error.message);
-  //     toast.error("Failed to confirm order");
-  //   } finally {
-  //     setIsSubmitting(false);
-  //   }
-  // };
-  
 
   return (
     <div className="min-h-screen bg-white py-12">
@@ -323,11 +281,18 @@ const ShoppingCart = () => {
                 <RadioGroup 
                   value={paymentMethod} 
                   onValueChange={setPaymentMethod}
-                  className="space-y-4"
+                  className="space-y-4" 
                 >
+                  {/* Cash on Delivery */}
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="cash" id="cash" />
+                    <RadioGroupItem value="Cash on Delivery" id="cash" />
                     <Label htmlFor="cash">Cash on Delivery</Label>
+                  </div>
+
+                  {/* UPI Payment */}
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="UPI" id="upi" />
+                    <Label htmlFor="upi">UPI (Google Pay, PhonePe, Paytm, etc.)</Label>
                   </div>
                 </RadioGroup>
               </CardContent>
@@ -364,7 +329,6 @@ const ShoppingCart = () => {
             </Card>
                 <div className="p-6">
                   <h2 className="text-2xl font-semibold text-gray-800">Total: ₹{(totalCartPrice || 0).toLocaleString()}</h2>
-                  {/* <button onClick={() => setIsAddressModalOpen(true)} className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg">Add New Address</button> */}
                 </div>
               </div>
             ) : (
@@ -373,17 +337,15 @@ const ShoppingCart = () => {
           </div>
         )}
       </motion.div>
-      {/* Address Modal */}
-      <AddressModal 
-        isOpen={isAddressModalOpen} 
-        onClose={() => setIsAddressModalOpen(false)} 
-        newAddressData={newAddressData} 
-        setNewAddressData={setNewAddressData} 
-        handleCreateNewAddress={async () => {
-          await handleCreateNewAddress();
-          fetchSavedAddresses();
-        }} 
-      />    </div>
+{/* Address Modal */}
+<AddressModal 
+  isOpen={isAddressModalOpen} 
+  onClose={() => setIsAddressModalOpen(false)} 
+  newAddressData={newAddressData} 
+  setNewAddressData={setNewAddressData} 
+  handleCreateNewAddress={handleCreateNewAddress} 
+  onChange={(e) => setNewAddressData({ ...newAddressData, streetOrSociety: e.target.value })}
+/>    </div>
   );
 };
 

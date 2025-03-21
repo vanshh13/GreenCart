@@ -1,9 +1,9 @@
 import React, { useState, useRef } from "react";
 import axios from "axios";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Eye, Check, Loader2} from "lucide-react";
 import AdminNavbar from "../components/AdminNavigation";
-import { motion } from "framer-motion";
-
+import { motion, AnimatePresence  } from "framer-motion";
+import ProductCatalog from "./ProductCatalog";
 const AddProduct = () => {
   const [product, setProduct] = useState({
     Name: "",
@@ -19,6 +19,11 @@ const AddProduct = () => {
 
   const [errors, setErrors] = useState({});
   const fileInputRef = useRef(null);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [newProductId, setNewProductId] = useState(null);
+  const [submitStatus, setSubmitStatus] = useState(null);
+  const categories = ['Fruits', 'Vegetables', 'Grains', 'Dairy', 'Bakery', 'Oil & Ghee', 'Masala', 'Other'];
 
   // Validate Form
   const validateForm = () => {
@@ -68,6 +73,9 @@ const AddProduct = () => {
 
     if (!validateForm()) return;
 
+    setIsLoading(true);
+    setSubmitStatus(null);
+
     const formData = new FormData();
     Object.entries(product).forEach(([key, value]) => {
       if (key === "Images") {
@@ -82,24 +90,51 @@ const AddProduct = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      alert("Product added successfully!");
-      console.log("Product Created:", response.data);
+      setNewProductId(response.data._id);
+      setSubmitStatus('success');
+      setTimeout(() => {
+        setIsLoading(false);
+        setIsPreviewModalOpen(true);
+      }, 1500);
     } catch (error) {
       console.error("Error:", error.response?.data);
-      alert("Error adding product: " + (error.response?.data?.error || error.message));
+      setSubmitStatus('error');
+      setIsLoading(false);
     }
   };
 
+  // Preview Functionality
+  const handlePreviewClick = () => {
+    // Create a preview object similar to how it would be displayed
+    const previewProduct = {
+      ...product,
+      _id: 'preview',
+      Images: product.Images.map(img => img.url),
+    };
+    setIsPreviewModalOpen(true);
+  };
+
   return (
-    <div>
+    <div className="bg-gray-50 min-h-screen">
     <AdminNavbar />
     <motion.div 
         initial={{ opacity: 0, y: 50 }} 
         animate={{ opacity: 1, y: 0 }} 
         transition={{ duration: 0.5 }} 
         className="max-w-4xl mx-auto mt-24 p-6 bg-white shadow-lg rounded-lg">
-    <div className="max-w-4xl mx-auto p-8 bg-white shadow-lg rounded-lg">
-      <h2 className="text-2xl font-semibold mb-4">Add New Product</h2>
+           <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-semibold">Add New Product</h2>
+          <button 
+            type="button"
+            onClick={handlePreviewClick}
+            disabled={product.Images.length === 0}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 transition duration-300"
+          >
+            <Eye className="h-5 w-5" />
+            <span>Preview Product</span>
+          </button>
+        </div>
+    <div className="max-w-4xl mx-auto p-8 bg-white">
       <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
         {/* Name */}
         <div>
@@ -135,12 +170,24 @@ const AddProduct = () => {
 
         {/* Category */}
         <div>
-          <label className="block font-medium">Category *</label>
-          <input type="text" name="Category" value={product.Category} onChange={handleChange}
-            className="border rounded px-3 py-2 w-full" required />
-          {errors.Category && <p className="text-red-500">{errors.Category}</p>}
-        </div>
-
+        <label className="block font-medium">Category *</label>
+        <select
+          name="Category"
+          value={product.Category}
+          onChange={handleChange}
+          className="border rounded px-3 py-2 w-full"
+          required
+        >
+          <option value="">Select a category</option>
+          {categories.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </select>
+        
+        {errors.Category && <p className="text-red-500">{errors.Category}</p>}
+      </div>
         {/* SubCategory */}
         <div>
           <label className="block font-medium">SubCategory *</label>
@@ -190,6 +237,110 @@ const AddProduct = () => {
       </form>
     </div>
     </motion.div>
+    {/* Loading Overlay */}
+    <AnimatePresence>
+        {isLoading && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          >
+            <motion.div
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 300 }}
+              className="bg-white p-8 rounded-xl shadow-2xl text-center"
+            >
+              {submitStatus === null ? (
+                <>
+                  <Loader2 className="h-16 w-16 mx-auto text-blue-500 animate-spin mb-4" />
+                  <p className="text-xl font-semibold text-gray-700">Adding Product...</p>
+                </>
+              ) : submitStatus === 'success' ? (
+                <>
+                  <Check className="h-16 w-16 mx-auto text-green-500 mb-4" />
+                  <p className="text-xl font-semibold text-green-700">Product Added Successfully!</p>
+                </>
+              ) : (
+                <>
+                  <X className="h-16 w-16 mx-auto text-red-500 mb-4" />
+                  <p className="text-xl font-semibold text-red-700">Failed to Add Product</p>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Preview Modal */}
+      <AnimatePresence>
+        {isPreviewModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            {newProductId ? (
+              <ProductCatalog 
+                productId={newProductId} 
+                onClose={() => setIsPreviewModalOpen(false)} 
+              />
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="bg-white max-w-4xl w-full rounded-xl overflow-hidden shadow-2xl"
+              >
+                <div className="grid grid-cols-2">
+                  {/* Images Section */}
+                  <div className="p-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      {product.Images.map((img, index) => (
+                        <img 
+                          key={index} 
+                          src={img.url} 
+                          alt={`Product Preview ${index + 1}`} 
+                          className="w-full h-48 object-cover rounded-lg shadow-md"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Product Details Section */}
+                  <div className="p-6 bg-gray-50">
+                    <h2 className="text-2xl font-bold mb-4">{product.Name}</h2>
+                    <p className="text-gray-600 mb-4">{product.Description}</p>
+                    
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <p className="text-sm text-gray-500">Price</p>
+                        <p className="font-semibold">₹{product.Price}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Stock</p>
+                        <p className="font-semibold">{product.Stock}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Category</p>
+                        <p className="font-semibold">{product.Category}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">SubCategory</p>
+                        <p className="font-semibold">{product.SubCategory}</p>
+                      </div>
+                    </div>
+                    
+                    <button 
+                      onClick={() => setIsPreviewModalOpen(false)}
+                      className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-300"
+                    >
+                      Close Preview
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

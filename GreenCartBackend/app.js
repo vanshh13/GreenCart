@@ -13,6 +13,9 @@ const orderRoutes = require('./routes/OrderRoutes');
 const addressRoutes = require('./routes/AddressRoutes');
 const blogRoutes = require('./routes/BlogRouters');
 const WishlistRoutes = require("./routes/WishlistRoutes");
+const uploadRoutes = require("./utility/uploadController");
+const notificationRoutes = require("./routes/NotificationRoutes");
+const trackVisitor = require("./middleware/trackVisitors");
 
 const cors = require('cors');
 
@@ -29,6 +32,7 @@ app.use(
 );
 // Middleware
 app.use(express.json());
+app.use(trackVisitor);
 
 // Routes
 app.use('/api/users', userRoutes);
@@ -42,6 +46,8 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use("/api/wishlist", WishlistRoutes);
+app.use("/api/upload", uploadRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Serve static files
 app.use("/uploads", express.static("uploads"));

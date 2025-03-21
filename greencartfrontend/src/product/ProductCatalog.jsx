@@ -5,12 +5,16 @@ const ProductCatalog = ({ productId, onClose }) => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(""); // Track currently displayed image
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         const response = await axios.get(`http://localhost:5000/api/products/${productId}`);
         setProduct(response.data);
+        if (response.data.Images && response.data.Images.length > 0) {
+          setSelectedImage(response.data.Images[0]); // Set first image as default
+        }
       } catch (err) {
         setError("Product not found or error fetching product");
       } finally {
@@ -22,7 +26,7 @@ const ProductCatalog = ({ productId, onClose }) => {
   }, [productId]);
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-10 z-50">
+    <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-60 z-50">
       <div className="bg-white max-w-3xl w-full p-6 rounded-lg shadow-lg relative">
         {/* Close Button */}
         <button
@@ -41,13 +45,30 @@ const ProductCatalog = ({ productId, onClose }) => {
           <div>
             <h1 className="text-2xl font-bold mb-4 text-gray-800">{product.Name}</h1>
             <div className="flex flex-col md:flex-row">
-              {/* Product Image */}
+              {/* Product Image Display */}
               <div className="md:w-1/2">
                 <img
-                  src={product.Images?.[0] || "https://via.placeholder.com/300"}
+                  src={selectedImage || "https://via.placeholder.com/300"}
                   alt={product.Name}
                   className="w-full h-64 object-cover rounded-lg shadow"
                 />
+
+                {/* Thumbnail Preview */}
+                {product.Images && product.Images.length > 1 && (
+                  <div className="flex mt-3 space-x-2 overflow-x-auto">
+                    {product.Images.map((img, index) => (
+                      <img
+                        key={index}
+                        src={img}
+                        alt={`Thumbnail ${index + 1}`}
+                        className={`w-16 h-16 object-cover rounded cursor-pointer border-2 ${
+                          selectedImage === img ? "border-blue-500" : "border-gray-300"
+                        }`}
+                        onClick={() => setSelectedImage(img)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Product Info */}
@@ -73,4 +94,4 @@ const ProductCatalog = ({ productId, onClose }) => {
   );
 };
 
-    export default ProductCatalog;
+export default ProductCatalog;

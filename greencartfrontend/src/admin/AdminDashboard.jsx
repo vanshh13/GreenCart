@@ -21,10 +21,22 @@ const AdminDashboard = () => {
     totalSales: 0
   });
 
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: "New order #1234 requires attention", type: "warning" },
-    { id: 2, message: "Stock running low for Product X", type: "alert" },
-  ]);
+  const [notifications, setNotifications] = useState([]);
+  
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/notifications");
+        const data =  res.data.notifications;
+        // Sort notifications by latest and limit to 3
+        setNotifications(data.slice(0, 3));
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -52,39 +64,68 @@ const AdminDashboard = () => {
   
     fetchStats();
   }, []);
+  const notificationTypeLabels = {
+    new_user: "New User Registered",
+    new_order: "New Order Placed",
+    user_deleted: "User Deleted",
+    new_product: "New Product Added",
+    new_blog: "New Blog Published",
+    order_cancelled: "Order Cancelled",
+    update_admin: "Admin Updated",
+    update_orderstatus: "Order Status Updated",
+    update_adminrole: "Admin Role Updated",
+    update_product: "Product Updated",
+    product_deleted: "Product Deleted",
+    update_blog: "Blog Updated",
+    blog_deleted: "Blog Deleted"
+  };
   const QuickActions = () => (
-    <div className="flex gap-4 mb-6">
-      <NavLink to= "/admin/users/add">
+    <div className="flex gap-4 mb-6 z-50">
+      <NavLink to= "/admin/add-product">
       <button className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
         <Plus size={16} />
         Quick Add Product
       </button>
       </NavLink>
-      <button className="flex items-center gap-2 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors">
-        <Bell size={16} />
-        View Notifications
-      </button>
+      <NavLink to = "/admin/notification-page">
+        <button className="flex items-center gap-2 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors">
+          <Bell size={16} />
+          View Notifications
+        </button>
+      </NavLink>
     </div>
   );
-  // Notification Center component
-  const NotificationCenter = () => (
+
+  const NotificationCenter = () => ( 
     <div className="mb-8">
       <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
         <Bell size={20} />
         Recent Notifications
       </h2>
       <div className="space-y-2">
-        {notifications.map(notification => (
-          <Alert key={notification.id} variant={notification.type === "warning" ? "warning" : "destructive"}>
-            <AlertDescription className="flex items-center gap-2">
-              <AlertTriangle size={16} />
-              {notification.message}
-            </AlertDescription>
-          </Alert>
-        ))}
+        {notifications.length > 0 ? (
+          notifications.map((notification) => (
+            <Alert
+              key={notification._id}
+              variant={notification.status === "unread" ? "warning" : "default"}
+            >
+              <AlertDescription className="flex items-center gap-2">
+                <AlertTriangle size={16} />
+                <span className="font-semibold">
+                  {notificationTypeLabels[notification.type] || "Unknown Notification"}
+                </span>
+                - {notification.message}
+              </AlertDescription>
+            </Alert>
+          ))
+        ) : (
+          <p className="text-gray-500">No recent notifications</p>
+        )}
       </div>
     </div>
   );
+  
+  
     // Stats Card with loading animation
     const StatsCard = ({ icon: Icon, value, label, color }) => (
       <Card className={`${color} text-white shadow-lg h-36 md:h-44 rounded-xl transform hover:scale-105 transition-transform duration-200`}>
@@ -124,7 +165,7 @@ const AdminDashboard = () => {
     },
     {
       id: 'manage_admins',
-      title: 'Manage Admins',
+      title: 'Manage Users',
       icon: <Users />,
       color: 'bg-indigo-500',
       link: '/admin/users'
@@ -251,7 +292,7 @@ return (
 
       {/* Notification Center */}
       <NotificationCenter />
-
+      
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-10">
         <StatsCard 

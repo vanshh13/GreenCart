@@ -10,7 +10,7 @@ const blogSchema = new mongoose.Schema({
   comments: [
     {
       userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-      text: { type: String, required: true },
+      text: { type: String},
       date: { type: Date, default: Date.now }
     }
   ]

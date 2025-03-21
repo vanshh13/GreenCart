@@ -8,6 +8,7 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Address = require('../models/Address');
+const Notification = require("../models/NotificationModel");
 
 exports.oauth = async (req, res) => {
   const provider = req.params.provider;
@@ -51,6 +52,13 @@ exports.registerUser = async (req, res) => {
       });
     }
     
+    // Create a new notification for the admin
+    await Notification.create({
+      message: `New user registered: ${newUser.UserName} as a ${newUser.UserType}`,
+      type: "new_user",
+      actionBy: newUser._id,
+    });
+
     res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -219,6 +227,12 @@ exports.deleteUser = async (req, res) => {
     // Delete the user
     await User.deleteOne({ _id: userId });
 
+    // Create a new notification for the admin
+    await Notification.create({
+      message: `Delete user Account: ${user.UserName}`,
+      type: "user_deleted",
+      actionBy: userId,
+    });
     res.status(200).json({
       message: 'User and all associated records deleted successfully',
       recordsDeleted: {
@@ -240,5 +254,55 @@ exports.getusers = async (req, res) => {
     res.status(200).json({ users });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getcurrentuser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    const admin = await Admin.findOne({ user: req.user.id });
+    res.status(200).json({ user, admin });
+  }
+  catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+exports.getUserDetails = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    // 🔹 Step 1: Find User
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    let userTypeData = null;
+    let userType = "unknown";
+
+    // 🔹 Step 2: Check if user is a Customer
+    const customer = await Customer.findOne({ user: user._id }).populate("CustomerAddress");
+    if (customer) {
+      userType = "customer";
+      userTypeData = customer;
+    } else {
+      // 🔹 Step 3: Check if user is an Admin
+      const admin = await Admin.findOne({ user: user._id }).populate("adminAddress");
+      if (admin) {
+        userType = "admin";
+        userTypeData = admin;
+      }
+    }
+
+    // 🔹 Step 4: Send response
+    res.json({
+      user,
+      userType,
+      userTypeData,
+    });
+  } catch (error) {
+    console.error("Error fetching user details:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };

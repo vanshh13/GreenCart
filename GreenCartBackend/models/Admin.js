@@ -11,9 +11,9 @@ const AdminSchema = new Schema({
   user: { type: mongoose.Types.ObjectId, required: true, ref: 'User' },
   role: {
     type: String,
-    enum: ['manager', 'admin'],
+    enum: ['Manager', 'Admin'],
     required: true,
-    default: 'manager' // Default role
+    default: 'Manager' // Default role
   }
 }, { collection: 'Admin' });
 

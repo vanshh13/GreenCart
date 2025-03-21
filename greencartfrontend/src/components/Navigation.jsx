@@ -69,7 +69,7 @@ import { useCart } from "../Context/CartContext";
 
     useEffect(() => {
       fetchCart();
-    }, []); // Only run on component mount
+    }, [cartItems]); 
 
     return (
       <motion.nav

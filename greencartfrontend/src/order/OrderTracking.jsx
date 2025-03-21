@@ -83,9 +83,9 @@ const OrderTracking = () => {
 const OrderTimeline = ({ orderStatus }) => {
   const steps = [
     { id: "ordered", label: "Order Placed", icon: ShoppingBag },
+    { id: "processing", label: "Processing", icon: Package },
     { id: "packed", label: "Packed", icon: Package },
     { id: "shipped", label: "Shipped", icon: Truck },
-    { id: "in_transit", label: "In Transit", icon: Truck },
     { id: "delivered", label: "Delivered", icon: Check },
   ];
 

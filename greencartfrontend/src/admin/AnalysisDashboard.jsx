@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card"
 import AdminNavbar from "../components/AdminNavigation";
 import { 
   ArrowUpRight, ArrowDownRight, DollarSign, ShoppingCart, 
-  Users, RefreshCw, Calendar, Download
+  Users, RefreshCw, Calendar, Download,
+  IndianRupee
 } from "lucide-react";
 
 const AnalysisDashboard = () => {
@@ -23,18 +24,33 @@ const AnalysisDashboard = () => {
   const fetchAnalysisData = async () => {
     setIsRefreshing(true);
     try {
+      const token = localStorage.getItem("authToken");
+
       // Simulating API calls - replace with actual endpoints when available
-      const salesRes = await axios.get("http://localhost:5000/api/analytics/sales");
-      const productRes = await axios.get("http://localhost:5000/api/analytics/products");
-      const userRes = await axios.get("http://localhost:5000/api/analytics/users");
-      
-      setSalesData(salesRes.data || getMockSalesData());
-      setProductData(productRes.data || getMockProductData());
-      setUserStats(userRes.data || {
-        total: 1250,
-        new: 127,
-        returning: 865
+      const salesRes = await axios.get(`http://localhost:5000/api/admins/analytics/sales/${timeframe}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
+      console.log("sales",salesRes.data);
+      const productRes = await axios.get(`http://localhost:5000/api/admins/analytics/products`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      console.log("product",productRes.data);
+      const userRes = await axios.get(`http://localhost:5000/api/admins/analytics/users`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      console.log(userRes.data);
+      setSalesData(salesRes.data);
+      setProductData(productRes.data);
+      setUserStats(userRes.data );
     } catch (error) {
       console.error("Error fetching analysis data:", error);
       // Fallback to mock data if API fails
@@ -50,7 +66,6 @@ const AnalysisDashboard = () => {
       setIsRefreshing(false);
     }
   };
-
   // Mock data for development/demo
   const getMockSalesData = () => {
     if (timeframe === "weekly") {
@@ -161,13 +176,13 @@ const AnalysisDashboard = () => {
           >
             <div className="flex items-center">
               <div className="rounded-full p-3 bg-green-100">
-                <DollarSign className="h-6 w-6 text-green-600" />
+                <IndianRupee className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-3">
                 <p className="text-sm font-medium text-gray-500">Total Revenue</p>
                 <div className="flex items-center">
                   <p className="text-xl font-bold">
-                    ${salesData.reduce((sum, item) => sum + item.sales, 0).toLocaleString()}
+                    <IndianRupee/>{salesData.reduce((sum, item) => sum + item.sales, 0).toLocaleString()}
                   </p>
                   <span className="flex items-center text-green-500 ml-2 text-sm">
                     <ArrowUpRight className="h-3 w-3" />

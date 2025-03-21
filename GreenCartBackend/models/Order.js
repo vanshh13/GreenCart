@@ -17,13 +17,14 @@ const OrderSchema = new mongoose.Schema({
   },
   orderDate: { type: Date, default: Date.now },
   OrderDetail: { type: mongoose.Types.ObjectId, ref: "OrderDetail" },
+  paymentMethod: { type: String, enum: ["UPI", "Cash on Delivery"], required: true },
 
   // ✅ NEW: Track timestamps for each status change
   timestamps: {
     ordered: { type: Date, default: Date.now },  // Initial timestamp
+    processing: { type: Date },
     packed: { type: Date },
     shipped: { type: Date },
-    in_transit: { type: Date },
     delivered: { type: Date },
     cancelled: { type: Date }  // ✅ New field to track cancellation time
   }

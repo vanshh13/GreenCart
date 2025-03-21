@@ -10,7 +10,8 @@ import {
 } from "recharts";
 import { 
   TrendingUp, Users, ShoppingBag, CreditCard, 
-  Star, RefreshCw, FileText, Calendar, Download
+  Star, RefreshCw, FileText, Calendar, Download,
+  IndianRupee
 } from "lucide-react";
 
 const AdminStatistics = () => {
@@ -28,12 +29,15 @@ const AdminStatistics = () => {
       setIsLoading(true);
       try {
         // Simulating API calls - replace with your actual endpoints
-        // const overviewRes = await axios.get(`http://localhost:5000/api/statistics/overview?period=${period}`);
+        // const overviewRes = await axios.get(`http://localhost:5000/api/admin/statistics/overview?period=${period}`);
         // const visitorRes = await axios.get(`http://localhost:5000/api/statistics/visitors?period=${period}`);
         // const productRes = await axios.get(`http://localhost:5000/api/statistics/products/top`);
         // const ratingRes = await axios.get(`http://localhost:5000/api/statistics/ratings`);
         // const paymentRes = await axios.get(`http://localhost:5000/api/statistics/sales/payment`);
-        
+        fetchOverviewStats("monthly");
+        fetchVisitorStats();
+        fetchProductStats();
+        fetchSalesByPayment();
         // Mock data for demonstration
         const mockOverviewStats = {
           totalSales: 138570,
@@ -79,11 +83,11 @@ const AdminStatistics = () => {
           { name: "Cash on Delivery", value: 5, color: "#FF8042" },
         ];
 
-        setOverviewStats(mockOverviewStats);
-        setVisitorStats(mockVisitorStats);
-        setProductStats(mockProductStats);
+        // setOverviewStats(mockOverviewStats);
+        // setVisitorStats(mockVisitorStats);
+        // setProductStats(mockProductStats);
         setRatingStats(mockRatingStats);
-        setSalesByPayment(mockSalesByPayment);
+        // setSalesByPayment(mockSalesByPayment);
       } catch (error) {
         console.error("Error fetching statistics data:", error);
       } finally {
@@ -94,6 +98,77 @@ const AdminStatistics = () => {
     fetchData();
   }, [period]);
 
+  const fetchVisitorStats = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const res = await axios.get(`http://localhost:5000/api/admins/statistics/visitors/${period}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      console.log("Visitor Stats:", res.data.stats);
+      setVisitorStats(res.data.stats);
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error fetching visitor statistics:", error);
+      setIsLoading(false);
+    }
+  };
+
+  const fetchOverviewStats = async (period = "monthly") => {
+    try {
+      const token = localStorage.getItem("authToken"); // Assuming token is stored in localStorage
+      const res = await axios.get(
+        `http://localhost:5000/api/admins/statistics/overview/${period}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, 
+          },
+        }
+      );
+      console.log("Overview Stats:", res.data);
+      setOverviewStats(res.data);
+    } catch (error) {
+      console.error("Error fetching overview statistics:", error);
+    }
+  };
+   
+  const fetchProductStats = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const res = await axios.get("http://localhost:5000/api/admins/statistics/products/top", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      console.log("Product Stats:", res.data.topProducts);
+      setProductStats(res.data.topProducts);
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error fetching product statistics:", error);
+      setIsLoading(false);
+    }
+  };
+
+  const fetchSalesByPayment = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      const res = await axios.get("http://localhost:5000/api/admins/statistics/sales/payment", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      console.log("Sales by Payment Method:", res.data.salesByPayment);
+      setSalesByPayment(res.data.salesByPayment);
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error fetching sales by payment method:", error);
+      setIsLoading(false);
+    }
+  };
   const downloadReport = () => {
     // Implementation for downloading reports
     alert("Report download functionality will be implemented here");
@@ -170,7 +245,7 @@ const AdminStatistics = () => {
                     <CreditCard size={20} className="text-blue-600" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold mb-2">${overviewStats.totalSales?.toLocaleString()}</p>
+                <p className="text-2xl font-bold mb-2"><IndianRupee/>{overviewStats.totalSales?.toLocaleString()}</p>
                 <div className="flex items-center text-sm">
                   {renderChangeIndicator(overviewStats.salesChange)}
                   <span className="text-gray-500 ml-2">vs. previous period</span>
@@ -224,7 +299,7 @@ const AdminStatistics = () => {
                     <FileText size={20} className="text-amber-600" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold mb-2">${overviewStats.averageOrderValue?.toFixed(2)}</p>
+                <p className="text-2xl font-bold mb-2"><IndianRupee/>{overviewStats.averageOrderValue?.toFixed(2)}</p>
                 <div className="flex items-center text-sm">
                   <span className="text-gray-500">Conversion rate: {overviewStats.conversionRate}%</span>
                 </div>

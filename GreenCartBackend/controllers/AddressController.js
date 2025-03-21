@@ -2,44 +2,68 @@ const mongoose = require('mongoose');
 const Address = require('../models/Address');
 const Customer = require('../models/Customer');
 const Admin = require('../models/Admin');
+const User = require('../models/User');
 // ✅ Create Address
-// ✅ Create Address for Admin or Customer
 exports.createAddress = async (req, res) => {
   try {
-    const { cityVillage, pincode, state, country, streetOrSociety, ownerId, ownerModel } = req.body;
-    
-    if (!mongoose.Types.ObjectId.isValid(ownerId)) {
-      return res.status(400).json({ message: "Invalid Owner ID" });
+    console.log("User Data from Middleware:", req.user); // ✅ Debugging log
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
-    
-    if (!["Admin", "Customer"].includes(ownerModel)) {
+
+    const { cityVillage, pincode, state, country, streetOrSociety } = req.body;
+
+    const parsedPincode = Number(pincode);
+    if (isNaN(parsedPincode)) {
+      return res.status(400).json({ message: "Invalid pincode. Must be a number." });
+    }
+
+    const userId = req.user.id;
+    let ownerId = userId;
+    const ownerModel = user.UserType;
+
+    if (ownerModel === "Admin") {
+      const admin = await Admin.findOne({ user: userId });
+      if (!admin) return res.status(400).json({ message: "Admin not found" });
+      ownerId = admin._id;
+    } else if (ownerModel === "Customer") {
+      const customer = await Customer.findOne({ user: userId });
+      if (!customer) return res.status(400).json({ message: "Customer not found" });
+      ownerId = customer._id;
+    } else {
       return res.status(400).json({ message: "Invalid ownerModel. Must be 'Admin' or 'Customer'." });
     }
-    
+
+    // ✅ Corrected ObjectId usage
     const address = new Address({
       cityVillage,
-      pincode,
+      pincode: parsedPincode,
       state,
       country,
       streetOrSociety,
-      ownerId: mongoose.Types.ObjectId(ownerId),
+      ownerId: new mongoose.Types.ObjectId(ownerId), // ✅ Fixed
       ownerModel,
     });
-    
+
     await address.save();
-    
-    // ✅ Assign address to the respective model
+
     if (ownerModel === "Customer") {
       await Customer.findByIdAndUpdate(ownerId, { $push: { CustomerAddress: address._id } });
     } else if (ownerModel === "Admin") {
       await Admin.findByIdAndUpdate(ownerId, { adminAddress: address._id });
     }
-    
+
     res.status(201).json({ message: "Address created successfully", address });
   } catch (error) {
+    console.error("Error in createAddress:", error);
     res.status(500).json({ message: error.message });
   }
 };
+
+
+
 
 // ✅ Get All Addresses
 exports.getAddresses = async (req, res) => {

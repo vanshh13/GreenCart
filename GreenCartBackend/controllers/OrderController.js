@@ -4,14 +4,17 @@ const OrderDetail = require('../models/OrderDetail');
 const Address = require('../models/Address');
 const ShoppingCart = require('../models/ShoppingCart');
 const CartItem = require('../models/CartItem');
+const Notification = require("../models/NotificationModel");
+const Product = require('../models/Product');
+const User = require('../models/User');
 // Create an Order
 exports.createOrder = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction(); // ✅ Start a transaction for data integrity
 
   try {
-    const user = req.user.id; 
-    const { orderItems, totalPrice, orderStatus, OrderDetail: orderDetailData } = req.body;
+    const user = req.user.id;
+    const { orderItems, totalPrice, orderStatus,paymentMethod, OrderDetail: orderDetailData } = req.body;
 
     // ✅ Validate required fields
     if (!orderItems || !totalPrice || !orderDetailData?.deliveryAddress) {
@@ -22,6 +25,26 @@ exports.createOrder = async (req, res) => {
     const addressExists = await Address.findById(orderDetailData.deliveryAddress);
     if (!addressExists) {
       return res.status(400).json({ success: false, message: 'Invalid delivery address' });
+    }
+
+    // ✅ Check product stock and decrement stock
+    for (const item of orderItems) {
+      const product = await Product.findById(item.product).session(session);
+
+      if (!product) {
+        return res.status(404).json({ success: false, message: `Product not found: ${item.product}` });
+      }
+
+      if (product.Stock < item.quantity) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Insufficient stock for ${product.Name}. Available stock: ${product.Stock}`
+        });
+      }
+
+      // ✅ Deduct stock
+      product.Stock -= item.quantity;
+      await product.save({ session });
     }
 
     // ✅ Create OrderDetail
@@ -43,6 +66,7 @@ exports.createOrder = async (req, res) => {
       orderStatus: orderStatus || 'pending',
       orderDate: new Date(),
       OrderDetail: savedOrderDetail._id,
+      paymentMethod: paymentMethod,
     });
 
     const savedOrder = await newOrder.save({ session });
@@ -73,6 +97,13 @@ exports.createOrder = async (req, res) => {
 
     await session.commitTransaction();
     session.endSession();
+    const userdetail = await User.findById(user);
+    // ✅ Create a notification for admin
+    await Notification.create({
+      message: `New order placed by ${userdetail.UserName}`,
+      type: "new_order",
+      actionBy: user._id,
+    });
 
     res.status(201).json({ success: true, message: 'Order placed successfully', order: savedOrder });
 
@@ -83,6 +114,7 @@ exports.createOrder = async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal Server Error', error: error.message });
   }
 };
+
 
 
 // Read an Order by ID
@@ -116,12 +148,13 @@ exports.getOrder = async (req, res) =>
 }
 };
 
-
 // Update an Order Status
 exports.updateOrderStatus = async (req, res) => {
   try {
     const orderId = req.params.orderId;
     const { status } = req.body;
+    const userId = req.user.id;
+    const user = await User.findById(userId);
 
     if (!status) {
       return res.status(400).json({ message: "Order status is required" });
@@ -133,13 +166,41 @@ exports.updateOrderStatus = async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
+    const currentStatus = order.orderStatus;
+
+    // Define allowed status transitions
+    const statusFlow = ["ordered", "processing", "packed", "shipped", "delivered"];
+
+    const currentIndex = statusFlow.indexOf(currentStatus);
+    const newIndex = statusFlow.indexOf(status);
+
+    // ✅ Allow cancellation only if the order is still in "ordered" or "processing"
+    if (status === "cancelled") {
+      if (!["ordered", "pending" ,"processing"].includes(currentStatus)) {
+        return res.status(400).json({
+          message: `Order cannot be cancelled once it is ${currentStatus}.`,
+        });
+      }
+    } 
+    // ❌ Prevent jumping statuses (except for cancellation)
+    else if (newIndex !== currentIndex + 1) {
+      return res.status(400).json({ 
+        message: `Invalid status transition: Cannot skip from ${currentStatus} to ${status}.`
+      });
+    }
+
+    // ❌ Prevent changing status after delivery
+    if (currentStatus === "delivered") {
+      return res.status(400).json({ message: "Order is already delivered, status cannot be changed." });
+    }
+
     // Define timestamp updates based on new status
     const timestampUpdates = {};
-    if (status === "processing") timestampUpdates["timestamps.packed"] = new Date();
+    if (status === "processing") timestampUpdates["timestamps.processing"] = new Date();
+    if (status === "packed") timestampUpdates["timestamps.packed"] = new Date();
     if (status === "shipped") timestampUpdates["timestamps.shipped"] = new Date();
-    if (status === "in_transit") timestampUpdates["timestamps.in_transit"] = new Date();
     if (status === "delivered") timestampUpdates["timestamps.delivered"] = new Date();
-    if (status === "cancelled") timestampUpdates["timestamps.cancelled"] = new Date(); // New field for cancellations
+    if (status === "cancelled") timestampUpdates["timestamps.cancelled"] = new Date();
 
     // Update order status and timestamps
     const updatedOrder = await Order.findByIdAndUpdate(
@@ -147,6 +208,13 @@ exports.updateOrderStatus = async (req, res) => {
       { orderStatus: status, ...timestampUpdates }, // Merge updates
       { new: true }
     );
+
+    // Create a notification for admin
+    await Notification.create({
+      message: `Order status updated by ${user.UserName}`,
+      type: "update_orderstatus",
+      actionBy: user.id,
+    });
 
     res.json(updatedOrder);
   } catch (error) {
@@ -156,25 +224,7 @@ exports.updateOrderStatus = async (req, res) => {
 };
 
 
-// Delete an Order
-// exports.deleteOrder = async (req, res) => {
-//   try {
-//     const orderId = req.params.id;
 
-//     // Find and delete the Order
-//     const order = await Order.findByIdAndDelete(orderId);
-//     if (!order) {
-//       return res.status(404).json({ message: 'Order not found' });
-//     }
-
-//     // Delete associated OrderDetails
-//     await OrderDetail.deleteMany({ order: orderId });
-
-//     res.status(200).json({ message: 'Order and associated details deleted successfully' });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// };
 exports.deleteOrder = async (req, res) => {
   try {
     const orderId = req.params.id;
@@ -194,7 +244,6 @@ exports.deleteOrder = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 
 exports.getOrders = async (req,res) => {
   try{
@@ -222,7 +271,6 @@ exports.getOrderByUser = async (req,res) => {
 exports.OrderTracking = async (req, res) => {
   try {
     const orderId = req.params.orderId;
-    console.log("Order ID from params:", orderId);
     // ✅ Find order by its _id
     const order = await Order.findById(orderId);
 

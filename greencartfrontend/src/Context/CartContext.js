@@ -24,7 +24,7 @@ export const CartProvider = ({ children }) => {
     if (userRole === "Customer") {
       fetchCart();
     }
-  }, [userRole]);
+  }, [userRole,cartItems]);
 
   return (
     <CartContext.Provider value={{ cartItems, setCartItems, fetchCart }}>
