@@ -26,7 +26,7 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 // 🔹 Create Product with Image Upload (Max 5 Images)
-router.post("/", upload.array("images", 5), ProductController.createProduct);
+router.post("/", upload.array("images", 5),authenticateToken,authorizeRole("Admin"), ProductController.createProduct);
 
 router.get("/", ProductController.getAllProducts); // Get All Products
 router.get("/:id", ProductController.getProduct); // Get Product by ID

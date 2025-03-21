@@ -86,8 +86,12 @@ const AddProduct = () => {
     });
 
     try {
+      const token = localStorage.getItem("authToken");
       const response = await axios.post("http://localhost:5000/api/products", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: { 
+          "Content-Type": "multipart/form-data",
+          "Authorization": `Bearer ${token}` // ✅ Adding the token in the headers
+        },
       });
 
       setNewProductId(response.data._id);
