@@ -5,6 +5,7 @@ const Notification = require("../models/NotificationModel");
 // Create a Product
 exports.createProduct = async (req, res) => {
   try {
+    
     const { Name, Description, Price, Available, Stock, Rating, Category, SubCategory } = req.body;
     console.log("Product Data Received:", req.body);
 

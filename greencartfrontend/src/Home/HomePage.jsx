@@ -5,9 +5,10 @@ import Navigation from "../components/Navigation";
 import Carousel from "../components/ui/Carousel";
 import OfferPanel from "../product/OfferPanel";
 import Categories from "../product/Categories";
-import ProductHome from "../product/ProductHome";
+import ProductHome from "../product/Product-Home";
 import Footer from "../components/Footer";
-
+import ScrollToTop from "../components/ui/ScrollToTop";
+import Blog from "../Home/Blog";
 const Homepage = () => {
   return (
     <ThemeProvider>
@@ -18,8 +19,10 @@ const Homepage = () => {
       <OfferPanel />
       <Categories />
       <ProductHome />
+      {/* <Blog/> */}
       <Footer />
     </div>
+    <ScrollToTop/>
   </ThemeProvider>
   
   );

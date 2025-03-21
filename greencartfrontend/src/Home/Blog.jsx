@@ -1,78 +1,163 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import "../Home/BlogStyles.css";
 
-const API_URL = 'http://localhost:5000/api/blogs';
-
-const Blog = ({ userId, token }) => {
+const Blog = () => {
   const [blogs, setBlogs] = useState([]);
-  const [commentText, setCommentText] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
+    const fetchBlogs = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/blogs/all");
+        setBlogs(res.data);
+      } catch (err) {
+        setError("Failed to fetch blogs. Please try again.");
+        console.error("Error fetching blogs:", err);
+      }
+      setLoading(false);
+    };
+   
     fetchBlogs();
   }, []);
 
-  const fetchBlogs = async () => {
-    try {
-      const res = await axios.get(API_URL);
-      setBlogs(res.data);
-    } catch (error) {
-      console.error('Error fetching blogs:', error);
-    }
+  // Animation on scroll effect
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('show');
+        }
+      });
+    }, { threshold: 0.1 });
+    
+    const blogCards = document.querySelectorAll('.blog-card');
+    blogCards.forEach(card => {
+      observer.observe(card);
+    });
+    
+    return () => {
+      blogCards.forEach(card => {
+        observer.unobserve(card);
+      });
+    };
+  }, [blogs]);
+
+  const toggleExpand = (id) => {
+    setExpandedId(expandedId === id ? null : id);
   };
 
-  const handleLike = async (blogId) => {
-    try {
-      await axios.put(`${API_URL}/like/${blogId}`, { userId }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      fetchBlogs();
-    } catch (error) {
-      console.error('Error liking blog:', error);
-    }
-  };
-
-  const handleComment = async (blogId) => {
-    if (!commentText[blogId]) return;
-    try {
-      await axios.post(`${API_URL}/comment/${blogId}`, { userId, text: commentText[blogId] }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setCommentText({ ...commentText, [blogId]: '' });
-      fetchBlogs();
-    } catch (error) {
-      console.error('Error adding comment:', error);
-    }
+  // Function to format date
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
   };
 
   return (
-    <div>
-      {blogs.map((blog) => (
-        <div key={blog._id} className="border p-4 my-2">
-          <h2>{blog.title}</h2>
-          <p>{blog.description}</p>
-          {blog.images.length > 0 && <img src={blog.images[0]} alt="Blog" width="200" />}
-          <div>
-            <button onClick={() => handleLike(blog._id)}>
-              {blog.likes.includes(userId) ? 'Unlike' : 'Like'} ({blog.likes.length})
-            </button>
-          </div>
-          <div>
-            <input
-              type="text"
-              value={commentText[blog._id] || ''}
-              onChange={(e) => setCommentText({ ...commentText, [blog._id]: e.target.value })}
-              placeholder="Add a comment..."
-            />
-            <button onClick={() => handleComment(blog._id)}>Comment</button>
-          </div>
-          <div>
-            <h4>Comments:</h4>
-            {blog.comments.map((comment, idx) => (
-              <p key={idx}>{comment.text}</p>
-            ))}
-          </div>
+    <div className="blog-container">
+      <div className="blog-header">
+        <div className="header-animation">
+          <h2 className="blog-title">Featured Articles</h2>
         </div>
-      ))}
+        <p className="blog-subtitle">Discover our latest and greatest content</p>
+      </div>
+      
+      {loading && (
+        <div className="loader-container">
+          <div className="pulse-loader"></div>
+        </div>
+      )}
+      
+      {error && <div className="error-message">{error}</div>}
+      
+      <div className="blog-list">
+        {blogs.length > 0 ? (
+          blogs.map((blog) => (
+            <div 
+              key={blog._id} 
+              className={`blog-card ${expandedId === blog._id ? 'expanded' : ''}`}
+            >
+              {/* Left side - Main Image */}
+              <div className="blog-image-section">
+                {blog.images && blog.images.length > 0 ? (
+                  <div className="image-container">
+                    <img 
+                      src={blog.images[0].startsWith('http') ? blog.images[0] : `http://localhost:5000/${blog.images[0]}`} 
+                      alt={`Featured for ${blog.title}`} 
+                      className="blog-featured-image" 
+                      onError={(e) => {
+                        e.target.src = "https://via.placeholder.com/800x600?text=Blog+Image";
+                      }}
+                    />
+                    <div className="image-overlay">
+                      <div className="blog-category">Article</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="blog-placeholder-image">
+                    <span>No Image Available</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Right side - Content */}
+              <div className="blog-content-section">
+                <div className="blog-meta">
+                  <span className="blog-date">{formatDate(blog.datePublished)}</span>
+                  {blog.userId && typeof blog.userId === 'object' && blog.userId.name && (
+                    <span className="blog-author">
+                      <span className="author-avatar">
+                        {blog.userId.name.charAt(0).toUpperCase()}
+                      </span>
+                      {blog.userId.name}
+                    </span>
+                  )}
+                </div>
+                
+                <h3 className="blog-card-title">{blog.title}</h3>
+                
+                <p className="blog-description">
+                  {expandedId === blog._id 
+                    ? blog.description 
+                    : blog.description.length > 150 
+                      ? `${blog.description.substring(0, 150)}...` 
+                      : blog.description}
+                </p>
+                
+                {/* Secondary Images (only when expanded) */}
+                {expandedId === blog._id && blog.images && blog.images.length > 1 && (
+                  <div className="blog-secondary-images">
+                    {blog.images.slice(1, 4).map((img, imgIndex) => (
+                      <div className="secondary-image-item" key={imgIndex}>
+                        <img 
+                          src={img.startsWith('http') ? img : `http://localhost:5000/${img}`} 
+                          alt={`Blog image ${imgIndex + 2}`}
+                          onError={(e) => {
+                            e.target.src = "https://via.placeholder.com/300x200?text=Image";
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <div className="blog-footer">
+                  <button 
+                    className="read-more-btn"
+                    onClick={() => toggleExpand(blog._id)}
+                  >
+                    {expandedId === blog._id ? 'Read Less' : 'Read More'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          !loading && <div className="no-blogs">No articles found. Check back soon!</div>
+        )}
+      </div>
     </div>
   );
 };

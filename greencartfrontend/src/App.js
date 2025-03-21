@@ -30,12 +30,16 @@ import Wishlist from "./product/Wishlist";
 import OrderTracking from "./order/OrderTracking";
 
 import ProductsGrid from "./product/ProductsGrid";
-import ProductHome from "./product/ProductHome";
+import ProductHome from "./product/Product-Home";
 import CategoryPage from "./product/CategoryPage";
-
+import ScrollToTop from "./components/ui/ScrollToTop";
+import About from "./Home/About"
+// import SearchResults from "./components/ui/SearchResults";
 
 import "./App.css";
 import NotificationsPage from "./admin/NotificationPage";
+import QuickViewModal from "./product/QuickViewModel";
+
 
 const ProtectedRoute = ({ element, allowedRoles }) => {
   const token = localStorage.getItem("authToken");
@@ -69,6 +73,26 @@ const ProtectedRoute = ({ element, allowedRoles }) => {
   }
 
   return element;
+};
+
+export const searchProducts = async (query) => {
+  try {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/api/products/search?query=${encodeURIComponent(query)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error searching products:', error);
+    throw error;
+  }
 };
 
 const App = () => {
@@ -118,9 +142,18 @@ const App = () => {
             <Route path="/logout" element={<ProtectedRoute element={<Logout />} allowedRoles={["Admin","Customer"]} />} />
             <Route path="*" element={<Navigate to="/" />} />
             <Route path="/productsgrid" element={<ProtectedRoute element={<ProductsGrid />} allowedRoles={["Customer"]} />} />
-          <Route path="/producthome" element={<ProtectedRoute element={<ProductHome />} allowedRoles={["Customer"]} />} />
+            <Route path="/producthome" element={<ProtectedRoute element={<ProductHome />} allowedRoles={["Customer"]} />} />
 
           <Route path="/category/:category" element={<CategoryPage />} />
+
+          <Route path="/quickviewmodel" element={<QuickViewModal />} />
+          <Route path="/scrolltotop" element={<ScrollToTop />} />
+          <Route path="/about" element={<About />} />
+
+
+          
+
+
 
 
             <Route path="/search" element={<SearchResults />} />

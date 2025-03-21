@@ -25,17 +25,12 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 router.post("/",upload.array("images", 5),authenticateToken, BlogController.createBlog);
+// ✅ Get All Blogs (Public)
+router.get("/all", BlogController.getAllBlogsFrontend);
 router.get("/", BlogController.getAllBlogs);
 router.get("/:id", BlogController.getBlogById);
 router.put("/:id", authenticateToken, BlogController.updateBlog);
 router.delete("/:id", authenticateToken, BlogController.deleteBlog);
 
-// ✅ Like a blog post
-router.put("/like/:id", authenticateToken, BlogController.likeBlog);
 
-// ✅ Add a comment
-router.post("/comment/:id", authenticateToken, BlogController.commentBlog);
-
-// ✅ Get comments for a blog post
-router.get("/comments/:id", BlogController.getComments);
 module.exports = router;
