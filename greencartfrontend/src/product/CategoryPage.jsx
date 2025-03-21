@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { ShoppingCart, Package, Loader2, Heart, ArrowUpDown, Star } from "lucide-react";
 import { addProductToCart } from "../api"; // Make sure this path is correct
 
-const ProductCard = ({ product, addToCart }) => {
+const ProductCard = ({ product, addToCart,onNotification }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -33,26 +33,33 @@ const ProductCard = ({ product, addToCart }) => {
   const handleWishlistToggle = async () => {
     const token = localStorage.getItem("authToken");
     if (!token) {
-      console.error("User is not authenticated.");
+      onNotification?.("Please login to manage wishlist", "error");
       return;
     }
 
     setWishlistLoading(true);
+
     try {
       if (isWishlisted) {
-        await axios.delete(`http://localhost:5000/api/wishlist/remove/:userId/:productId`, {
+        await axios.delete(`http://localhost:5000/api/wishlist/remove/${product._id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+        onNotification?.("Removed from wishlist", "success");
+        setIsWishlisted(false);
       } else {
-        await axios.post("http://localhost:5000/api/wishlist/add", { productId: product._id }, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await axios.post(
+          "http://localhost:5000/api/wishlist/add",
+          { productId: product._id },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        onNotification?.("Added to wishlist", "success");
+        setIsWishlisted(true);
       }
-
-      setIsWishlisted(!isWishlisted);
     } catch (error) {
-      console.error("Error updating wishlist:", error);
+      console.error("Error updating wishlist:", error.response?.data || error.message);
+      onNotification?.("Failed to update wishlist", "error");
     }
+
     setWishlistLoading(false);
   };
 
@@ -140,18 +147,26 @@ const ProductCard = ({ product, addToCart }) => {
         </div>
 
         {/* Status */}
-        <div className="flex items-center mb-4 text-xs">
-          {product.quantity > 0 ? (
-            <span className="text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full flex items-center">
-              <Package size={12} className="mr-1" />
-              In Stock
-            </span>
-          ) : (
-            <span className="text-red-600 bg-red-50 px-2 py-1 rounded-full flex items-center">
-              <Package size={12} className="mr-1" />
-              Out of Stock
-            </span>
-          )}
+        {/* Improved stock display */}
+        <div className="flex items-center text-sm text-gray-600">
+          <Package size={16} className="mr-1" />
+          <span
+            className={
+              product.Stock === 0
+                ? "text-red-500 font-medium"
+                : product.Stock < 5
+                ? "text-red-500 font-medium"
+                : product.Stock < 50
+                ? "text-blue-500 font-medium"
+                : product.Stock < 100
+                ? "text-green-500 font-medium"
+                : "text-emerald-600 font-medium"
+            }
+          >
+            {product.Stock === 0
+              ? "Out of Stock"
+              : `In Stock (${product.Stock} available)`}
+          </span>
         </div>
 
         {/* Add to Cart Button */}
@@ -160,10 +175,10 @@ const ProductCard = ({ product, addToCart }) => {
           whileTap={{ scale: 0.97 }}
           onClick={handleAddToCart}
           disabled={isLoading || product.quantity <= 0}
-          className={`w-full py-2.5 px-4 rounded-lg flex items-center justify-center font-medium text-sm transition-all duration-300 ${
+          className={`w-full py-3 px-4 rounded-lg flex items-center justify-center font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md hover:shadow-lg ${
             product.quantity > 0
               ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg"
-              : "bg-gray-200 text-gray-500 cursor-not-allowed"
+              : "bg-gray-200 text-gray-500"
           }`}
         >
           {isLoading ? <Loader2 className="animate-spin mr-2" size={16} /> : <ShoppingCart className="mr-2" size={16} />}

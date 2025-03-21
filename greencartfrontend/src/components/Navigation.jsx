@@ -152,10 +152,10 @@ import { useCart } from "../Context/CartContext";
 
                 <div className="flex items-center space-x-6">
     {[
-      { name: "Offers", path: "/offers" },
+      // { name: "Offers", path: "/offers" },
       { name: "Blog", path: "/blog" },
       { name: "About", path: "/about" },
-      { name: "All Product", path: "/productsgrid" },
+      { name: "Products", path: "/productsgrid" },
 
     ].map((item, index) => (
       <NavLink
@@ -188,7 +188,7 @@ import { useCart } from "../Context/CartContext";
             {/* Right Side Icons */}
             <div className="flex items-center space-x-7 ">
               {/* Search Bar */}
-              <div className="relative ">
+              {/* <div className="relative ">
                 <AnimatePresence>
                   {isSearchOpen && (
                     <motion.div
@@ -211,7 +211,7 @@ import { useCart } from "../Context/CartContext";
                 >
                   <Search className="h-5 w-5 text-gray-700 hover:text-green-600 transition-colors" />
                 </button>
-              </div>
+              </div> */}
 
             
 

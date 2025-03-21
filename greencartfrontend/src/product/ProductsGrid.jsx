@@ -5,25 +5,31 @@ import { ShoppingCart, Package, Loader2, Heart, Search, Filter, SlidersHorizonta
 import axios from "axios";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCart } from "../Context/CartContext";
-const ProductCard = ({ product, addToCart }) => {
+import QuickViewModal from "../product/QuickViewModel"; // Adjust the path if needed
+import ScrollToTop from "../components/ui/ScrollToTop";
+
+
+const ProductCard = ({ product, addToCart, onNotification }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    if (!token) return;
-
     const fetchWishlist = async () => {
+      const token = localStorage.getItem("authToken");
+      if (!token) return;
+
       try {
-        const response = await axios.get("http://localhost:5000/api/wishlist/:userId", {
+        const response = await axios.get("http://localhost:5000/api/wishlist/add", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const wishlistItems = response.data;
+
+        const wishlistItems = response.data || [];
         setIsWishlisted(wishlistItems.some((item) => item.product._id === product._id));
       } catch (error) {
-        console.error("Error fetching wishlist:", error);
+        console.error("Error fetching wishlist:", error.response?.data || error.message);
       }
     };
 
@@ -33,34 +39,46 @@ const ProductCard = ({ product, addToCart }) => {
   const handleWishlistToggle = async () => {
     const token = localStorage.getItem("authToken");
     if (!token) {
-      console.error("User is not authenticated.");
+      onNotification?.("Please login to manage wishlist", "error");
       return;
     }
 
     setWishlistLoading(true);
+
     try {
       if (isWishlisted) {
-        await axios.delete(`http://localhost:5000/api/wishlist/remove/:userId/:productId`, {
+        await axios.delete(`http://localhost:5000/api/wishlist/remove/${product._id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+        onNotification?.("Removed from wishlist", "success");
+        setIsWishlisted(false);
       } else {
-        await axios.post("http://localhost:5000/api/wishlist/add", { productId: product._id }, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await axios.post(
+          "http://localhost:5000/api/wishlist/add",
+          { productId: product._id },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        onNotification?.("Added to wishlist", "success");
+        setIsWishlisted(true);
       }
-
-      setIsWishlisted(!isWishlisted);
     } catch (error) {
-      console.error("Error updating wishlist:", error);
+      console.error("Error updating wishlist:", error.response?.data || error.message);
+      onNotification?.("Failed to update wishlist", "error");
     }
+
     setWishlistLoading(false);
   };
 
   const handleAddToCart = async () => {
     setIsLoading(true);
-    await addToCart(product);
+    try {
+      await addToCart(product);
+      onNotification?.("Added to cart!", "success");
+    } catch (error) {
+      onNotification?.("Failed to add item to cart", "error");
+    }
     setIsLoading(false);
-  };
+  };
 
   return (
     <motion.div
@@ -84,7 +102,7 @@ const ProductCard = ({ product, addToCart }) => {
         {wishlistLoading ? (
           <Loader2 className="w-6 h-6 animate-spin" />
         ) : (
-          <Heart className="w-6 h-6" fill={isWishlisted ? "red" : "none"} />
+          <Heart className="w-6 h-6" fill={isWishlisted ? "red" : "none"} stroke={isWishlisted ? "red" : "gray"} />
         )}
       </motion.button>
 
@@ -98,11 +116,6 @@ const ProductCard = ({ product, addToCart }) => {
           transition={{ duration: 0.3 }}
           onError={(e) => (e.target.src = "/default-Image.jpg")}
         />
-        {product.discount && (
-          <div className="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-md">
-            {product.discount}% OFF
-          </div>
-        )}
         
         {/* Quick view overlay on hover */}
         <motion.div 
@@ -114,85 +127,65 @@ const ProductCard = ({ product, addToCart }) => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={() => setIsQuickViewOpen(true)}
             className="bg-white text-gray-800 px-4 py-2 rounded-lg font-medium shadow-md"
           >
             Quick View
           </motion.button>
         </motion.div>
+        {/* QuickView Modal */}
+        {isQuickViewOpen && (
+          <QuickViewModal 
+            product={product}
+            isOpen={isQuickViewOpen}
+            onClose={() => setIsQuickViewOpen(false)}
+            addToCart={addToCart}
+          />
+        )}
       </div>
 
       {/* Product Info */}
-      <div className="space-y-3">
-        {/* Category tag */}
-        <div className="flex">
-          <span className="text-xs font-medium px-2 py-1 rounded-full bg-emerald-50 text-emerald-700">
-            {product.Category || "Fashion"}
-          </span>
-        </div>
-        
-        <h3 className="text-lg font-semibold text-gray-800 line-clamp-2 h-14">
-          {product.Name}
-        </h3>
+      <h3 className="text-lg font-semibold text-gray-800 line-clamp-2 h-14">
+        {product.Name}
+      </h3>
 
-        <div className="flex items-center space-x-1 text-amber-400">
-          {[...Array(5)].map((_, i) => (
-            <svg key={i} className="w-4 h-4" fill={(i < Math.floor(product.rating || 4)) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-            </svg>
-          ))}
-          <span className="text-xs text-gray-500 ml-1">({product.reviews || 24})</span>
-        </div>
-
-        <div className="flex items-baseline">
-          <span className="text-2xl font-bold text-emerald-600">
-            ₹{product.Price?.toLocaleString()}
-          </span>
-          {product.originalPrice && (
-            <span className="ml-2 text-sm text-gray-500 line-through">
-              ₹{product.originalPrice?.toLocaleString()}
-            </span>
-          )}
-        </div>
-
-        {/* Improved stock display */}
-        <div className="flex items-center text-sm text-gray-600">
-  <Package size={16} className="mr-1" />
-  <span
-    className={
-      product.Stock === 0
-        ? "text-red-500 font-medium"
-        : product.Stock < 5
-        ? "text-red-500 font-medium"
-        : product.Stock < 50
-        ? "text-blue-500 font-medium"
-        : product.Stock < 100
-        ? "text-green-500 font-medium"
-        : "text-emerald-600 font-medium"
-    }
-  >
-    {product.Stock === 0
-      ? "Out of Stock"
-      : `In Stock (${product.Stock} available)`}
-  </span>
-</div>
-
-
-        {/* Add to Cart Button */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={handleAddToCart}
-          disabled={isLoading || product.quantity <= 0}
-          className={`w-full py-3 px-4 rounded-lg flex items-center justify-center font-semibold transition-all duration-300 ${
-            product.quantity > 0
-              ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md hover:shadow-lg"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }`}
-        >
-          {isLoading ? <Loader2 className="animate-spin mr-2" size={20} /> : <ShoppingCart className="mr-2" size={20} />}
-          {isLoading ? "Adding..." : "Add to Cart"}
-        </motion.button>
+      <div className="flex items-baseline">
+        <span className="text-2xl font-bold text-emerald-600">
+          ₹{product.Price?.toLocaleString()}
+        </span>
       </div>
+         {/* Improved stock display */}
+         <div className="flex items-center text-sm text-gray-600">
+          <Package size={16} className="mr-1" />
+          <span
+            className={
+              product.Stock === 0
+                ? "text-red-500 font-medium"
+                : product.Stock < 5
+                ? "text-red-500 font-medium"
+                : product.Stock < 50
+                ? "text-blue-500 font-medium"
+                : product.Stock < 100
+                ? "text-green-500 font-medium"
+                : "text-emerald-600 font-medium"
+            }
+          >
+            {product.Stock === 0
+              ? "Out of Stock"
+              : `In Stock (${product.Stock} available)`}
+          </span>
+        </div>
+      {/* Add to Cart Button */}
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={handleAddToCart}
+        disabled={isLoading || product.Stock <= 0}
+        className="w-full py-3 px-4 rounded-lg flex items-center justify-center font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md hover:shadow-lg"
+      >
+        {isLoading ? <Loader2 className="animate-spin mr-2" size={20} /> : <ShoppingCart className="mr-2" size={20} />}
+        {isLoading ? "Adding..." : "Add to Cart"}
+      </motion.button>
     </motion.div>
   );
 };
@@ -318,11 +311,14 @@ const ProductGrid = () => {
           <p className="text-red-600">{error}</p>
         </motion.div>
       </div>
+      
     );
   }
 
   return (
     <div className="bg-white min-h-screen">
+        <ScrollToTop/>
+
       <div className="max-w-7xl mx-auto px-4 py-12">
         {/* Animated Header */}
         <motion.div
@@ -511,7 +507,10 @@ const ProductGrid = () => {
         )}
       </div>
     </div>
+    
   );
+
 };
+
 
 export default ProductGrid;

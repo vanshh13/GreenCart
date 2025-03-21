@@ -3,13 +3,14 @@ import axios from "axios";
 import { Heart, Package,Loader2, Trash2, ShoppingCart, BadgeCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { addProductToCart } from "../api";
-
+import { useNavigate } from "react-router-dom";
 const Wishlist = () => {
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState({});
   const [notification, setNotification] = useState({ show: false, message: "" });
   const token = localStorage.getItem("authToken");
+  const navigate=useNavigate();
 
   useEffect(() => {
     if (!token) {
@@ -167,8 +168,10 @@ const Wishlist = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => navigate("/ProductHome")} // Change "/products" to your actual route
               className="px-6 py-3 bg-emerald-600 text-white rounded-lg font-medium shadow-md hover:bg-emerald-700 transition-colors"
             >
+              
               Continue Shopping
             </motion.button>
           </motion.div>
@@ -180,7 +183,10 @@ const Wishlist = () => {
             className="grid grid-cols-4 gap-6"
           >
             <AnimatePresence>
-              {wishlist.map(({ product }) => (
+
+              {Array.isArray(wishlist) && wishlist.length > 0 ? (
+
+              wishlist.map(({ product }) => (
                 <motion.div
                   key={product._id}
                   variants={cardVariants}
@@ -243,14 +249,14 @@ const Wishlist = () => {
 
                     {/* Add to Cart Button */}
                     <motion.button
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => handleAddToCart(product)}
                       disabled={isLoading[product._id] || product.quantity <= 0}
-                      className={`w-full py-3 px-4 rounded-lg flex items-center justify-center font-semibold transition-all duration-300 ${
+                      className={`w-full py-3 px-4 rounded-lg flex items-center justify-center font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md hover:shadow-lg ${
                         product.quantity > 0
                           ? "bg-emerald-600 text-white shadow-md hover:bg-emerald-700 hover:shadow-lg"
-                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-gray-300 text-gray-500 cursor allowed"
                       }`}
                     >
                       {isLoading[product._id] ? (
@@ -262,7 +268,17 @@ const Wishlist = () => {
                     </motion.button>
                   </div>
                 </motion.div>
-              ))}
+              ))
+            ) : (
+              <p>
+                
+                
+              </p>
+            )}
+              
+              
+
+
             </AnimatePresence>
           </motion.div>
         )}
