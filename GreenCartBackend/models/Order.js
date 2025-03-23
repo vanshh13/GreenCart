@@ -15,9 +15,12 @@ const OrderSchema = new mongoose.Schema({
     enum: ["pending", "processing", "cancelled", "shipped", "in_transit", "delivered"],
     default: "pending",
   },
+  paymentStatus: {type:String, enum: ["paid","unpaid"],
+    default:"unpaid",
+  },
   orderDate: { type: Date, default: Date.now },
   OrderDetail: { type: mongoose.Types.ObjectId, ref: "OrderDetail" },
-  paymentMethod: { type: String, enum: ["UPI", "Cash on Delivery"], required: true },
+  paymentMethod: { type: String, enum: ["Online Payment", "Cash on Delivery"], required: true },
 
   // ✅ NEW: Track timestamps for each status change
   timestamps: {

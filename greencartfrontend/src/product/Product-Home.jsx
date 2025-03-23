@@ -201,16 +201,20 @@ const ProductCard = ({ product, addToCart, onNotification }) => {
         </div>
       {/* Add to Cart Button */}
       <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={handleAddToCart}
-        disabled={isLoading || product.Stock <= 0}
-        className="w-full py-3 px-4 rounded-lg flex items-center justify-center font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md hover:shadow-lg"
-      >
-        {isLoading ? <Loader2 className="animate-spin mr-2" size={20} /> : <ShoppingCart className="mr-2" size={20} />}
-        {isLoading ? "Adding..." : "Add to Cart"}
-      </motion.button>
-    </motion.div>
+              whileHover={{ scale: product.Stock > 0 ? 1.02 : 1 }}
+              whileTap={{ scale: product.Stock > 0 ? 0.98 : 1 }}
+              onClick={handleAddToCart}
+              disabled={isLoading || product.Stock <= 0}
+              className={`w-full py-3 px-4 rounded-lg flex items-center justify-center font-semibold shadow-md hover:shadow-lg ${
+                product.Stock <= 0 
+                  ? "bg-gray-300 text-gray-600" 
+                  : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white"
+              }`}
+            >
+              {isLoading ? <Loader2 className="animate-spin mr-2" size={20} /> : <ShoppingCart className="mr-2" size={20} />}
+              {isLoading ? "Adding..." : product.Stock <= 0 ? "Out of Stock" : "Add to Cart"}
+            </motion.button>
+          </motion.div>
   );
 };
 
