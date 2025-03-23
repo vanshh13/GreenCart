@@ -101,12 +101,24 @@ exports.loginUser = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
-    
+    if(user.UserType === 'Admin'){
+      const admin = await Admin.findOne({ user: user._id });
+      if (!admin) {
+        return res.status(404).json({ message: 'Admin not found' });
+      }
+      res.status(200).json({
+      message: 'Login successful',
+      token,
+      role: admin.role, // Include role for client-side logic
+    });
+    }
+    else{
     res.status(200).json({
       message: 'Login successful',
       token,
       role: user.UserType, // Include role for client-side logic
     });
+  }
     req.session.userId = user._id; 
     req.session.userRole = user.role; 
   } catch (error) {

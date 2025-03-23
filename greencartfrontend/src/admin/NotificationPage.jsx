@@ -151,7 +151,7 @@ const NotificationsPage = () => {
       const res = await axios.delete("http://localhost:5000/api/notifications/clear-all");
   
       if (res.status === 200) {
-        setNotifications([]);
+        fetchNotifications();
         setFilteredNotifications([]);
         setUnreadCount(0);
       }
@@ -267,7 +267,7 @@ const NotificationsPage = () => {
                     className="px-3 py-1.5 text-sm bg-red-50 text-red-600 rounded hover:bg-red-100 flex items-center"
                   >
                     <Trash2 size={16} className="mr-1" />
-                    Clear all
+                    Clear all Read Notifications
                   </button>
                   <button 
                     onClick={fetchNotifications}

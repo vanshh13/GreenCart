@@ -20,7 +20,7 @@ const SearchResults = () => {
 
       setLoading(true);
       try {
-        const { searchProducts } = await import("../api"); // Import from API
+        const { searchProducts } = await import("../../api"); // Import from API
         const results = await searchProducts(query);
         setProducts(results);
         setError(null);

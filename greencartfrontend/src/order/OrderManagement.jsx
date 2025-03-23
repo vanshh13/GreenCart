@@ -55,15 +55,26 @@ const showNotification = (message) => {
       });
 
       const addressesData = await Promise.all(addressRequests);
-
+    // Fetch product details and attach them to orderItems
+    const productRequests = ordersData.map(order =>{
+      Promise.all(
+        order.orderItems.map(async (item) => {
+          const productRes = await axios.get(`http://localhost:5000/api/products/${item.product}`);
+          // console.log("Product details:", item,productRes.data);
+          return { ...item, productDetails: productRes.data }; // Merge product details into item
+        })
+      )
+    }
+    );
+const productDetailsData = await Promise.all(productRequests);
       // Merge data into orders
       const updatedOrders = ordersData.map((order, index) => ({
         ...order,
         userDetails: usersData[index] || {},
         orderDetails: orderDetailsData[index] || {},
         addressDetails: addressesData[index] || {},
+        productDetailsData: productDetailsData[index] || []
       }));
-
       setOrders(updatedOrders);
       setFilteredOrders(updatedOrders);
     } catch (error) {
@@ -572,7 +583,32 @@ const showNotification = (message) => {
                       <IndianRupee className="h-4 w-4 mr-1" /> {/* Adjust size and spacing */}
                       {selectedOrder.totalPrice ? selectedOrder.totalPrice.toFixed(2) : "N/A"}
                     </span>                  </div>
-                                      
+                  
+                  {/* Display product items */}
+                  <div className="grid grid-cols-3 items-start">
+                    <span className="text-sm font-medium text-gray-500">Products:</span>
+                    <div className="col-span-2">
+                      {selectedOrder.orderItems && selectedOrder.orderItems.length > 0 ? (
+                        <div className="space-y-2">
+                          {selectedOrder.orderItems.map((item, index) => (
+                            <div key={index} className="text-sm text-gray-900 border-b pb-2">
+                              <p className="font-medium">{item?.product || "Unknown Product"}</p>
+                              <div className="flex justify-between mt-1">
+                                <span>Qty: {item.quantity}</span>
+                                <span className="flex items-center">
+                                  <IndianRupee className="h-3 w-3 mr-1" /> 
+                                  {item.price ? item.price.toFixed(2) : "N/A"}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-900">No product details available</span>
+                      )}
+                    </div>
+                  </div>
+                  
                   <div className="grid grid-cols-3 items-center">
                     <span className="text-sm font-medium text-gray-500">Status:</span>
                     <span className={`col-span-2 text-sm px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedOrder.orderStatus)}`}>
@@ -580,12 +616,19 @@ const showNotification = (message) => {
                     </span>
                   </div>
                   
+                  <div className="grid grid-cols-3 items-center">
+                    <span className="text-sm font-medium text-gray-500">Payement Status:</span>
+                    <span className={`col-span-2 text-sm px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedOrder.paymentStatus)}`}>
+                      {selectedOrder.paymentStatus.charAt(0).toUpperCase() + selectedOrder.paymentStatus.slice(1)}
+                    </span>
+                  </div>
+                  
                   <div className="grid grid-cols-3 items-start">
                     <span className="text-sm font-medium text-gray-500">Address:</span>
                     <div className="col-span-2 text-sm text-gray-900">
-                      <p>{selectedOrder.addressDetails?.streetAddress || "N/A"}</p>
+                      <p>{selectedOrder.addressDetails?.streetOrSociety || "N/A"}</p>
                       <p>{selectedOrder.addressDetails?.cityVillage || "N/A"}, {selectedOrder.addressDetails?.state || "N/A"}</p>
-                      <p>{selectedOrder.addressDetails?.country || "N/A"}, {selectedOrder.addressDetails?.zipCode || "N/A"}</p>
+                      <p>{selectedOrder.addressDetails?.country || "N/A"}, {selectedOrder.addressDetails?.pincode || "N/A"}</p>
                     </div>
                   </div>
                   
