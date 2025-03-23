@@ -9,6 +9,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Address = require('../models/Address');
 const Notification = require("../models/NotificationModel");
+const cloudinary = require("cloudinary").v2;
 
 exports.oauth = async (req, res) => {
   const provider = req.params.provider;
@@ -180,29 +181,102 @@ exports.getUser = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
-
-// Update a User
+// Updated controller function for user profile
 exports.updateUser = async (req, res) => {
   try {
-    const userId = req.params.id;
-    const updates = req.body;
-
-    // Check if password is being updated
+    const userId = req.user.id; // Get user ID from token
+    let updates = req.body;
+    
+    // Hash password only if it's being updated
     if (updates.Password) {
-      updates.Password = await bcrypt.hash(updates.Password, 10); // Hash the new password
+      updates.Password = await bcrypt.hash(updates.Password, 10);
     }
-
-    // Update the user
-    const updatedUser = await User.findByIdAndUpdate(userId, updates, { new: true });
+    
+    let customerImageUrl = null;
+    
+    // Handle Cloudinary upload for Image
+    if (req.body.Image) {
+      const uploadedResponse = await cloudinary.uploader.upload(req.body.Image, {
+        folder: "customer_images",
+      });
+      customerImageUrl = uploadedResponse.secure_url;
+    }
+    
+    // Update User Model
+    const updatedUser = await User.findByIdAndUpdate(userId, {
+      UserName: updates.UserName,
+      UserEmail: updates.UserEmail,
+      ...(updates.Password && { Password: updates.Password }), // Update only if provided
+    }, { new: true }).select("-Password");
+    
     if (!updatedUser) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
-
-    res.status(200).json({ message: 'User updated successfully', user: updatedUser });
+    
+    // Handle address for customer
+    let addressId = null;
+    if (updates.CustomerAddress) {
+      // Create or update address
+      const addressData = {
+        streetOrSociety: updates.CustomerAddress.streetOrSociety,
+        cityVillage: updates.CustomerAddress.cityVillage,
+        pincode: updates.CustomerAddress.pincode,
+        state: updates.CustomerAddress.state,
+        country: updates.CustomerAddress.country,
+        ownerModel: 'Customer'
+      };
+      
+      // Find if customer already has an address
+      const customer = await Customer.findOne({ user: userId }).populate('CustomerAddress');
+      
+      if (customer && customer.CustomerAddress && customer.CustomerAddress.length > 0) {
+        // Update existing address
+        addressId = customer.CustomerAddress[0]._id;
+        await Address.findByIdAndUpdate(addressId, addressData);
+      } else {
+        // Create new address
+        const newAddress = new Address(addressData);
+        const savedAddress = await newAddress.save();
+        addressId = savedAddress._id;
+      }
+    }
+    
+    // Prepare customer update data
+    const customerUpdateData = {
+      CustomerName: updates.UserName,
+      CustomerEmail: updates.UserEmail,
+      ...(updates.CustomerContact && { CustomerContact: updates.CustomerContact }),
+      ...(customerImageUrl && { Image: customerImageUrl }),
+    };
+    
+    // Add address reference if we have one
+    if (addressId) {
+      customerUpdateData.CustomerAddress = [addressId];
+    }
+    
+    // Update Customer Model
+    const updatedCustomer = await Customer.findOneAndUpdate(
+      { user: userId }, // Find customer linked to this user
+      customerUpdateData,
+      { new: true }
+    );
+    
+    if (!updatedCustomer) {
+      return res.status(404).json({ message: "Customer record not found" });
+    }
+    
+    res.status(200).json({
+      message: "Profile updated successfully",
+      user: updatedUser,
+      customer: updatedCustomer,
+    });
   } catch (error) {
+    console.error("Error updating profile:", error);
     res.status(500).json({ error: error.message });
   }
 };
+
+
 
 // Delete a User
 exports.deleteUser = async (req, res) => {

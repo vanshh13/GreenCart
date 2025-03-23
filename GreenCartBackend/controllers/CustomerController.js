@@ -136,7 +136,7 @@ exports.updateCustomer = async (req, res) => {
     customer.CustomerEmail = CustomerEmail || customer.CustomerEmail;
     customer.CustomerContact = CustomerContact || customer.CustomerContact;
     customer.Image = Image || customer.Image;
-
+    console.log(customer);
     await customer.save();
     res.status(200).json({ message: 'Customer updated successfully', customer });
   } catch (error) {

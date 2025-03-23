@@ -30,14 +30,13 @@ const Notification = ({ message, type, isVisible }) => {
 
 
 
-const QuickViewModal = ({ product, addToCart,isOpen, onClose }) => {
+const QuickViewModal = ({ product, addToCart, isOpen, onClose }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
   
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [inWishlist, setInWishlist] = useState(false);
   const [notification, setNotification] = useState({
     isVisible: false,
     message: "",
@@ -61,7 +60,9 @@ const QuickViewModal = ({ product, addToCart,isOpen, onClose }) => {
       }
     };
 
-    fetchWishlist();
+    if (product && product._id) {
+      fetchWishlist();
+    }
   }, [product?._id]);
 
   const handleImageChange = (index) => {
@@ -105,32 +106,12 @@ const QuickViewModal = ({ product, addToCart,isOpen, onClose }) => {
     }
     setIsLoading(false);
   };
-
-  useEffect(() => {
-    const fetchWishlist = async () => {
-      const token = localStorage.getItem("authToken");
-      if (!token) return;
-
-      try {
-        const response = await axios.get("http://localhost:5000/api/wishlist/add", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const wishlistItems = response.data || [];
-        setIsWishlisted(wishlistItems.some((item) => item.product._id === product._id));
-      } catch (error) {
-        console.error("Error fetching wishlist:", error.response?.data || error.message);
-      }
-    };
-
-    fetchWishlist();
-  }, [product._id]);
   
   // Toggle wishlist function
   const handleWishlistToggle = async () => {
     const token = localStorage.getItem("authToken");
     if (!token) {
-      onNotification?.("Please login to manage wishlist", "error");
+      onNotification("Please login to manage wishlist", "error");
       return;
     }
 
@@ -141,7 +122,7 @@ const QuickViewModal = ({ product, addToCart,isOpen, onClose }) => {
         await axios.delete(`http://localhost:5000/api/wishlist/remove/${product._id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        onNotification?.("Removed from wishlist", "success");
+        onNotification("Removed from wishlist", "success");
         setIsWishlisted(false);
       } else {
         await axios.post(
@@ -149,12 +130,12 @@ const QuickViewModal = ({ product, addToCart,isOpen, onClose }) => {
           { productId: product._id },
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        onNotification?.("Added to wishlist", "success");
+        onNotification("Added to wishlist", "success");
         setIsWishlisted(true);
       }
     } catch (error) {
       console.error("Error updating wishlist:", error.response?.data || error.message);
-      onNotification?.("Failed to update wishlist", "error");
+      onNotification("Failed to update wishlist", "error");
     }
 
     setWishlistLoading(false);
@@ -340,7 +321,7 @@ const QuickViewModal = ({ product, addToCart,isOpen, onClose }) => {
                     ? 'bg-gray-400 text-white cursor-wait'
                     : product.Stock > 0
                     ? 'bg-emerald-500 text-white hover:bg-emerald-600'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-gray-300 text-gray-500'
                 }`}
               >
                 <ShoppingCart className="mr-2" size={20} />
@@ -351,13 +332,14 @@ const QuickViewModal = ({ product, addToCart,isOpen, onClose }) => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleWishlistToggle}
+                disabled={wishlistLoading}
                 className={`bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-lg transition ${
-                  inWishlist 
+                  isWishlisted 
                     ? 'border-red-400 bg-red-50 text-red-500 hover:bg-red-100' 
                     : 'hover:bg-gray-50'
                 }`}
               >
-                <Heart className={`w-6 h-6 ${inWishlist ? 'fill-red-500 text-red-500' : ''}`} />
+                <Heart className={`w-6 h-6 ${isWishlisted ? 'fill-red-500 text-red-500' : ''}`} />
               </motion.button>
             </div>
           </div>

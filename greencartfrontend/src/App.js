@@ -33,12 +33,18 @@ import ProductsGrid from "./product/ProductsGrid";
 import ProductHome from "./product/Product-Home";
 import CategoryPage from "./product/CategoryPage";
 import ScrollToTop from "./components/ui/ScrollToTop";
+import BackButton from "./components/ui/BackButton";
+
 import About from "./Home/About"
 // import SearchResults from "./components/ui/SearchResults";
 
 import "./App.css";
 import NotificationsPage from "./admin/NotificationPage";
 import QuickViewModal from "./product/QuickViewModel";
+
+
+import RazorpayPayment from "./order/RazorpayPayment"; // Import the new component
+
 
 
 const ProtectedRoute = ({ element, allowedRoles }) => {
@@ -103,6 +109,27 @@ const App = () => {
     setTimeout(() => setNotification({ message: "", show: false }), 5000);
   };
 
+  // Example customer data - replace with actual user data from your auth context/state
+  const customerInfo = {
+    name: "Customer Name",
+    email: "customer@example.com",
+    phone: "9173781550"
+  };
+
+  // Payment success handler
+  const handlePaymentSuccess = (response) => {
+    console.log("Payment successful", response);
+    showNotification("Payment successful!");
+    // Add your logic to update order status, redirect to confirmation page, etc.
+  };
+
+  // Payment failure handler
+  const handlePaymentFailure = (error) => {
+    console.error("Payment failed", error);
+    showNotification("Payment failed: " + error);
+  };
+
+
   return (
     <Router>
       <CartProvider> {/* ✅ Wrap everything inside CartProvider */}
@@ -114,6 +141,17 @@ const App = () => {
               onClose={() => setNotification({ message: "", show: false })}
             />
           )}
+
+
+          {/* Example payment component usage - you would typically place this in your checkout page */}
+          {/* <div className="container mx-auto p-4">
+            <RazorpayPayment 
+              amount={100} // Replace with actual cart total
+              customerInfo={customerInfo}
+              onSuccess={handlePaymentSuccess}
+              onFailure={handlePaymentFailure}
+            />
+          </div> */}
 
           <Routes>
             <Route path="/authpage" element={<AuthPage />} />
@@ -148,6 +186,8 @@ const App = () => {
 
           <Route path="/quickviewmodel" element={<QuickViewModal />} />
           <Route path="/scrolltotop" element={<ScrollToTop />} />
+          <Route path="/backbutton" element={<BackButton />} />
+
           <Route path="/about" element={<About />} />
 
 

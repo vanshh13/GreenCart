@@ -14,7 +14,7 @@ exports.createOrder = async (req, res) => {
 
   try {
     const user = req.user.id;
-    const { orderItems, totalPrice, orderStatus,paymentMethod, OrderDetail: orderDetailData } = req.body;
+    const { orderItems, totalPrice, orderStatus,paymentStatus,paymentMethod, OrderDetail: orderDetailData } = req.body;
 
     // ✅ Validate required fields
     if (!orderItems || !totalPrice || !orderDetailData?.deliveryAddress) {
@@ -67,6 +67,7 @@ exports.createOrder = async (req, res) => {
       orderDate: new Date(),
       OrderDetail: savedOrderDetail._id,
       paymentMethod: paymentMethod,
+      paymentStatus: paymentStatus || 'unpaid',
     });
 
     const savedOrder = await newOrder.save({ session });
@@ -169,13 +170,15 @@ exports.updateOrderStatus = async (req, res) => {
     const currentStatus = order.orderStatus;
 
     // Define allowed status transitions
-    const statusFlow = ["ordered", "processing", "packed", "shipped", "delivered"];
+    const statusFlow = ["ordered","pending", "processing", "packed", "shipped", "delivered"];
 
     const currentIndex = statusFlow.indexOf(currentStatus);
     const newIndex = statusFlow.indexOf(status);
-
+console.log(currentStatus);
+console.log(status);
     // ✅ Allow cancellation only if the order is still in "ordered" or "processing"
     if (status === "cancelled") {
+      
       if (!["ordered", "pending" ,"processing"].includes(currentStatus)) {
         return res.status(400).json({
           message: `Order cannot be cancelled once it is ${currentStatus}.`,

@@ -1,15 +1,87 @@
 import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { addProductToCart } from "../api";
-import { ShoppingCart, Package, Loader2, Heart, Search, Filter, SlidersHorizontal, ArrowLeft } from "lucide-react";
+import { ShoppingCart, Package, Loader2, Heart, Search, Filter, SlidersHorizontal, ArrowLeft, X, AlertCircle, CheckCircle, Info } from "lucide-react";
 import axios from "axios";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCart } from "../Context/CartContext";
 import QuickViewModal from "../product/QuickViewModel"; // Adjust the path if needed
 import ScrollToTop from "../components/ui/ScrollToTop";
+import BackButton from "../components/ui/BackButton";
 
+// Toast Notification Component
+const Toast = ({ message, type, onClose }) => {
+  // Different styling based on notification type
+  const getTypeStyles = () => {
+    switch (type) {
+      case "success":
+        return {
+          bgColor: "bg-emerald-50",
+          borderColor: "border-emerald-500",
+          textColor: "text-emerald-700",
+          icon: <CheckCircle className="h-5 w-5 text-emerald-500" />
+        };
+      case "error":
+        return {
+          bgColor: "bg-red-50",
+          borderColor: "border-red-500",
+          textColor: "text-red-700",
+          icon: <AlertCircle className="h-5 w-5 text-red-500" />
+        };
+      case "info":
+        return {
+          bgColor: "bg-blue-50",
+          borderColor: "border-blue-500",
+          textColor: "text-blue-700",
+          icon: <Info className="h-5 w-5 text-blue-500" />
+        };
+      default:
+        return {
+          bgColor: "bg-gray-50",
+          borderColor: "border-gray-500",
+          textColor: "text-gray-700",
+          icon: <Info className="h-5 w-5 text-gray-500" />
+        };
+    }
+  };
 
-const ProductCard = ({ product, addToCart, onNotification }) => {
+  const styles = getTypeStyles();
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className={`fixed top-4 right-4 z-50 flex items-center ${styles.bgColor} border-l-4 ${styles.borderColor} p-4 shadow-md rounded-md max-w-md`}
+    >
+      <div className="flex items-center">
+        {styles.icon}
+        <div className={`ml-3 ${styles.textColor} font-medium`}>{message}</div>
+      </div>
+      <button onClick={onClose} className="ml-auto">
+        <X className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+      </button>
+    </motion.div>
+  );
+};
+
+// Toast Notification Manager Component
+const NotificationManager = ({ notifications, removeNotification }) => {
+  return (
+    <AnimatePresence>
+      {notifications.map((notification) => (
+        <Toast
+          key={notification.id}
+          message={notification.message}
+          type={notification.type}
+          onClose={() => removeNotification(notification.id)}
+        />
+      ))}
+    </AnimatePresence>
+  );
+};
+
+const ProductCard = ({ product, addToCart, showNotification }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -39,7 +111,7 @@ const ProductCard = ({ product, addToCart, onNotification }) => {
   const handleWishlistToggle = async () => {
     const token = localStorage.getItem("authToken");
     if (!token) {
-      onNotification?.("Please login to manage wishlist", "error");
+      showNotification("Please login to manage wishlist", "error");
       return;
     }
 
@@ -50,7 +122,7 @@ const ProductCard = ({ product, addToCart, onNotification }) => {
         await axios.delete(`http://localhost:5000/api/wishlist/remove/${product._id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        onNotification?.("Removed from wishlist", "success");
+        showNotification("Removed from wishlist", "success");
         setIsWishlisted(false);
       } else {
         await axios.post(
@@ -58,24 +130,30 @@ const ProductCard = ({ product, addToCart, onNotification }) => {
           { productId: product._id },
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        onNotification?.("Added to wishlist", "success");
+        showNotification("Added to wishlist", "success");
         setIsWishlisted(true);
       }
     } catch (error) {
       console.error("Error updating wishlist:", error.response?.data || error.message);
-      onNotification?.("Failed to update wishlist", "error");
+      showNotification("Failed to update wishlist", "error");
     }
 
     setWishlistLoading(false);
   };
 
   const handleAddToCart = async () => {
+    // Check if product is out of stock
+    if (product.Stock <= 0) {
+      showNotification("Sorry, this item is out of stock", "error");
+      return;
+    }
+    
     setIsLoading(true);
     try {
       await addToCart(product);
-      onNotification?.("Added to cart!", "success");
+      showNotification(`${product.Name} added to cart!`, "success");
     } catch (error) {
-      onNotification?.("Failed to add item to cart", "error");
+      showNotification("Failed to add item to cart", "error");
     }
     setIsLoading(false);
   };
@@ -140,6 +218,7 @@ const ProductCard = ({ product, addToCart, onNotification }) => {
             isOpen={isQuickViewOpen}
             onClose={() => setIsQuickViewOpen(false)}
             addToCart={addToCart}
+            showNotification={showNotification}
           />
         )}
       </div>
@@ -177,14 +256,18 @@ const ProductCard = ({ product, addToCart, onNotification }) => {
         </div>
       {/* Add to Cart Button */}
       <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
+        whileHover={{ scale: product.Stock > 0 ? 1.02 : 1 }}
+        whileTap={{ scale: product.Stock > 0 ? 0.98 : 1 }}
         onClick={handleAddToCart}
         disabled={isLoading || product.Stock <= 0}
-        className="w-full py-3 px-4 rounded-lg flex items-center justify-center font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md hover:shadow-lg"
+        className={`w-full py-3 px-4 rounded-lg flex items-center justify-center font-semibold shadow-md hover:shadow-lg ${
+          product.Stock <= 0 
+            ? "bg-gray-300 text-gray-600" 
+            : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white"
+        }`}
       >
         {isLoading ? <Loader2 className="animate-spin mr-2" size={20} /> : <ShoppingCart className="mr-2" size={20} />}
-        {isLoading ? "Adding..." : "Add to Cart"}
+        {isLoading ? "Adding..." : product.Stock <= 0 ? "Out of Stock" : "Add to Cart"}
       </motion.button>
     </motion.div>
   );
@@ -204,6 +287,25 @@ const ProductGrid = () => {
   const [sortBy, setSortBy] = useState("default");
   const [showFilters, setShowFilters] = useState(false);
   const { fetchCart } = useCart();
+  
+  // Notification state
+  const [notifications, setNotifications] = useState([]);
+
+  // Show notification function
+  const showNotification = (message, type = "info") => {
+    const id = Date.now();
+    setNotifications(prev => [...prev, { id, message, type }]);
+    
+    // Auto remove notification after 3 seconds
+    setTimeout(() => {
+      removeNotification(id);
+    }, 3000);
+  };
+
+  // Remove notification function
+  const removeNotification = (id) => {
+    setNotifications(prev => prev.filter(notification => notification.id !== id));
+  };
 
   // Fetch categories
   useEffect(() => {
@@ -246,6 +348,7 @@ const ProductGrid = () => {
       } catch (err) {
         console.error("Error fetching products:", err);
         setError("Failed to load products. Please try again later.");
+        showNotification("Failed to load products. Please try again later.", "error");
       } finally {
         setIsLoading(false);
       }
@@ -270,9 +373,16 @@ const ProductGrid = () => {
     try {
       const token = localStorage.getItem("authToken");
       if (!token) {
-        console.error("User is not authenticated.");
+        showNotification("Please login to add items to cart", "error");
         return;
       }
+      
+      // Check if product is out of stock before API call
+      if (product.Stock <= 0) {
+        showNotification("Sorry, this item is out of stock", "error");
+        return;
+      }
+      
       const cart = {
         productId: product._id,
         quantity: 1,
@@ -282,8 +392,10 @@ const ProductGrid = () => {
       const data = response.data;
       fetchCart();
       console.log("Item added successfully:", data);
+      return data; // Return data for success case
     } catch (error) {
       console.error("Error adding to cart:", error.message);
+      throw error; // Throw error to be caught by the calling function
     }
   };
 
@@ -311,13 +423,18 @@ const ProductGrid = () => {
           <p className="text-red-600">{error}</p>
         </motion.div>
       </div>
-      
     );
   }
 
   return (
     <div className="bg-white min-h-screen">
-        <ScrollToTop/>
+      <BackButton/>
+      <ScrollToTop/>
+      {/* Notification Manager Component */}
+      <NotificationManager 
+        notifications={notifications}
+        removeNotification={removeNotification}
+      />
 
       <div className="max-w-7xl mx-auto px-4 py-12">
         {/* Animated Header */}
@@ -487,7 +604,11 @@ const ProductGrid = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <ProductCard product={product} addToCart={addToCart} />
+                <ProductCard 
+                  product={product} 
+                  addToCart={addToCart} 
+                  showNotification={showNotification}
+                />
               </motion.div>
             ))}
           </motion.div>
@@ -507,10 +628,7 @@ const ProductGrid = () => {
         )}
       </div>
     </div>
-    
   );
-
 };
-
 
 export default ProductGrid;

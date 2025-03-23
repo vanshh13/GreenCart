@@ -15,7 +15,7 @@ const Carousel = () => {
       setCurrentIndex((prevIndex) =>
         prevIndex === images.length - 1 ? 0 : prevIndex + 1
       );
-    }, 10000); // Auto slide every 3 seconds
+    }, 5000); // Auto slide every 3 seconds
 
     return () => clearInterval(interval);
   }, []);

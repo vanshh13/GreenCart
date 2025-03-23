@@ -4,12 +4,20 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import { ShoppingCart, Package, Loader2, Heart, ArrowUpDown, Star } from "lucide-react";
 import { addProductToCart } from "../api"; // Make sure this path is correct
+import QuickViewModal from "../product/QuickViewModel"; // Adjust the path if needed
+import { useNavigate } from "react-router-dom";
+import BackButton from "../components/ui/BackButton";
+
 
 const ProductCard = ({ product, addToCart,onNotification }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+  
+  const navigate = useNavigate();
+
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -73,6 +81,7 @@ const ProductCard = ({ product, addToCart,onNotification }) => {
   const rating = (Math.random() * 2 + 3).toFixed(1); // Random rating between 3.0 and 5.0
 
   return (
+    
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -81,6 +90,13 @@ const ProductCard = ({ product, addToCart,onNotification }) => {
       onMouseLeave={() => setIsHovered(false)}
       className="bg-white rounded-xl overflow-hidden shadow hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 relative group"
     >
+      <BackButton/>
+
+
+
+
+
+
       {/* Wishlist Button */}
       <button
         onClick={handleWishlistToggle}
@@ -96,6 +112,10 @@ const ProductCard = ({ product, addToCart,onNotification }) => {
         )}
       </button>
 
+ 
+
+
+
       {/* Image Container */}
       <div className="relative overflow-hidden aspect-square bg-gray-50">
         <img
@@ -104,6 +124,33 @@ const ProductCard = ({ product, addToCart,onNotification }) => {
           className="object-contain w-full h-full transform transition-transform duration-500 hover:scale-105"
           onError={(e) => (e.target.src = "/default-Image.jpg")}
         />
+
+        {/* Quick view overlay on hover */}
+ <motion.div 
+          className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center rounded-xl"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: isHovered ? 1 : 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsQuickViewOpen(true)}
+            className="bg-white text-gray-800 px-4 py-2 rounded-lg font-medium shadow-md"
+          >
+            Quick View
+          </motion.button>
+        </motion.div>
+        {/* QuickView Modal */}
+        {isQuickViewOpen && (
+          <QuickViewModal 
+            product={product}
+            isOpen={isQuickViewOpen}
+            onClose={() => setIsQuickViewOpen(false)}
+            addToCart={addToCart}
+            // showNotification={showNotification}
+          />
+        )}
         
         {/* Discount Tag */}
         {product.discount && (
@@ -111,6 +158,7 @@ const ProductCard = ({ product, addToCart,onNotification }) => {
             {product.discount}% OFF
           </div>
         )}
+        
       </div>
 
       {/* Product Info */}
@@ -297,7 +345,9 @@ const CategoryPage = () => {
       <div className="container mx-auto px-4 py-6 border-b">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
           {!loading && (
-            <p className="text-sm text-gray-500 mb-4 md:mb-0">{products.length} products found</p>
+            <p className="text-sm text-red-500 mb-4 md:mb-0">
+  {products.length} products found
+</p>
           )}
           
           <div className="relative">
@@ -309,7 +359,6 @@ const CategoryPage = () => {
               <option value="featured">Featured</option>
               <option value="priceAsc">Price: Low to High</option>
               <option value="priceDesc">Price: High to Low</option>
-              <option value="newest">Newest First</option>
             </select>
             <ArrowUpDown size={14} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
           </div>

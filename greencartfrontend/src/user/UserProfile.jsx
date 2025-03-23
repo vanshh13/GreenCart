@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { User, Mail, Phone, MapPin, Camera, Edit2, Save, X, Calendar, Instagram, Facebook, Twitter, Globe, Gift, Lock, Shield, Bell, Package } from 'lucide-react';
@@ -6,6 +6,7 @@ import Logout from '../components/authentication/Logout';
 import { fetchOrderByUser, updateOrderStatus } from '../api';
 import Notification from "../components/ui/notification/Notification";
 import axios from 'axios';
+import BackButton from '../components/ui/BackButton';
 
 const UserProfile = () => {
   const navigate = useNavigate();
@@ -18,34 +19,30 @@ const UserProfile = () => {
   const [userType, setUserType] = useState('');
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [imagePreview, setImagePreview] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Unified form state for both admin and customer
   const [userForm, setUserForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    role: '',
-    avatar: '/api/placeholder/150/150',
-    social: {
-      instagram: '',
-      facebook: '',
-      twitter: '',
-      website: ''
-    },
-    preferences: {
-      newsletter: true,
-      notifications: true,
-      twoFactor: false,
-    }
+    name: "",
+    email: "",
+    phone: "",
+    avatar: "",
   });
 
+  const [addressForm, setAddressForm] = useState({
+    streetOrSociety: "",
+    cityVillage: "",
+    pincode: "",
+    state: "",
+    country: "",
+  });
+
+  // Fetch user details function to populate user and address fields
   const fetchUserDetails = async () => {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("authToken");
-      // Get user ID from token or localStorage
-      const userId = localStorage.getItem("userId"); // Ensure you store userId when logging in
       
       const res = await axios.get(`http://localhost:5000/api/users/getuserdetails/`, {
         headers: {
@@ -59,28 +56,38 @@ const UserProfile = () => {
       setUserTypeData(userTypeData);
       setUserType(userType);
       
-      // Initialize form data based on user type
+      // Handle image URL
+      let avatarUrl = "";
+      if (userType === 'customer' && userTypeData?.Image) {
+        avatarUrl = userTypeData.Image;
+      } else if (userType === 'admin' && userTypeData?.Image) {
+        avatarUrl = userTypeData.Image;
+      }
+      
+      // Get the address data
+      const addressData = userType === 'customer' ? 
+        (userTypeData?.CustomerAddress && userTypeData.CustomerAddress.length > 0 ? 
+          userTypeData.CustomerAddress[0] : null) : 
+        (userTypeData?.adminAddress || null);
+      
+      // Initialize address form with data if available
+      if (addressData) {
+        setAddressForm({
+          streetOrSociety: addressData.streetOrSociety || '',
+          cityVillage: addressData.cityVillage || '',
+          pincode: addressData.pincode || '',
+          state: addressData.state || '',
+          country: addressData.country || ''
+        });
+      }
+      
+      // Initialize user form
       setUserForm({
         name: user.UserName,
         email: user.UserEmail,
         phone: userType === 'customer' ? userTypeData?.CustomerContact || '' : userTypeData?.adminContact || '',
-        address: userType === 'customer' ? 
-          (userTypeData?.CustomerAddress && userTypeData.CustomerAddress.length > 0 ? 
-            formatAddress(userTypeData.CustomerAddress[0]) : 'No address provided') : 
-          (userTypeData?.adminAddress ? formatAddress(userTypeData.adminAddress) : 'No address provided'),
         role: userType === 'admin' ? userTypeData?.role || 'Manager' : '',
-        avatar: userTypeData?.Image || '/api/placeholder/150/150',
-        social: {
-          instagram: '',
-          facebook: '',
-          twitter: '',
-          website: ''
-        },
-        preferences: {
-          newsletter: true,
-          notifications: true,
-          twoFactor: false,
-        }
+        avatar: avatarUrl || ''
       });
     } catch (error) {
       console.error("Error fetching user details:", error);
@@ -88,27 +95,6 @@ const UserProfile = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Helper function to format address
-  const formatAddress = (addressObj) => {
-    if (!addressObj) return 'No address provided';
-    
-    // Check if it's just a reference ID
-    if (typeof addressObj === 'string') return 'Address details not available';
-    
-    // Format the address if it's a populated object
-    const { street, city, state, zipCode, country, fullAddress } = addressObj;
-    
-    if (fullAddress) return fullAddress;
-    
-    if (street || city || state || zipCode || country) {
-      return [street, city, state, zipCode, country]
-        .filter(Boolean)
-        .join(', ');
-    }
-    
-    return 'No address details available';
   };
 
   useEffect(() => {
@@ -152,6 +138,34 @@ const UserProfile = () => {
     }
   };
 
+  // Handler for address form changes
+  const handleAddressChange = (e) => {
+    const { name, value } = e.target;
+    setAddressForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle image upload
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Create a preview for immediate display
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Trigger file input click when profile image is clicked
+  const handleImageClick = () => {
+    fileInputRef.current.click();
+  };
+
+  // Updated submit function to handle both address updates and image uploads
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -163,13 +177,30 @@ const UserProfile = () => {
         UserEmail: userForm.email,
         ...(userType === 'customer' ? {
           CustomerContact: userForm.phone,
-          // Address updates would require special handling
+          CustomerAddress: {
+            streetOrSociety: addressForm.streetOrSociety,
+            cityVillage: addressForm.cityVillage,
+            pincode: addressForm.pincode,
+            state: addressForm.state,
+            country: addressForm.country
+          }
         } : {
           adminContact: userForm.phone,
-          // Admin address update logic
+          adminAddress: {
+            streetOrSociety: addressForm.streetOrSociety,
+            cityVillage: addressForm.cityVillage,
+            pincode: addressForm.pincode,
+            state: addressForm.state, 
+            country: addressForm.country
+          }
         })
       };
-
+      
+      // Add image data if there's a new image
+      if (imagePreview) {
+        updateData.Image = imagePreview;
+      }
+      
       await axios.put(`http://localhost:5000/api/users/updateuser/`, updateData, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -179,6 +210,7 @@ const UserProfile = () => {
 
       setNotification({ message: "Profile updated successfully!", type: "success" });
       setIsEditing(false);
+      setImagePreview(null); // Clear the preview after successful update
       fetchUserDetails(); // Refresh user data
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -205,7 +237,7 @@ const UserProfile = () => {
     const token = localStorage.getItem("authToken");
   
     try {
-      await updateOrderStatus(token, confirmCancel, "Cancelled");
+      await updateOrderStatus(token, confirmCancel, "cancelled");
       setNotification({ message: "Order canceled successfully!", type: "success" });
       fetchOrders();
     } catch (error) {
@@ -228,8 +260,18 @@ const UserProfile = () => {
     );
   }
 
+  const getProfileImage = () => {
+    if (imagePreview) {
+      return imagePreview; // Show preview if a new image has been selected
+    } else if (userForm.avatar && userForm.avatar.trim() !== "") {
+      return userForm.avatar; // Show existing image from database
+    } else {
+      return "https://tse2.mm.bing.net/th?id=OIP.AbGafkazjc_S1pZPh0B9cQHaIm&pid=Api&P=0&h=180";    }
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen p-8 animate-fadeIn">
+      <BackButton/>
       {notification && (
         <Notification 
           message={notification.message} 
@@ -248,18 +290,32 @@ const UserProfile = () => {
           {/* Profile Image and Basic Info */}
           <div className="relative flex flex-col items-center">
             <div className="relative group z-10">
-              <div className="w-40 h-40 rounded-full border-4 border-white shadow-xl overflow-hidden transform transition-transform duration-300 group-hover:scale-105">
-              <img 
-                src={userForm.avatar && userForm.avatar.trim() !== "" ? userForm.avatar : "https://icon-library.com/images/profile-png-icon/profile-png-icon-2.jpg"}
-                alt="Profile"
-                className="w-full h-full object-cover"
-                onError={(e) => { e.target.src = "https://tse2.mm.bing.net/th?id=OIP.AbGafkazjc_S1pZPh0B9cQHaIm&pid=Api&P=0&h=180"; }}
-              />
+              <div 
+                className="w-40 h-40 rounded-full border-4 border-white shadow-xl overflow-hidden transform transition-transform duration-300 group-hover:scale-105"
+                onClick={isEditing ? handleImageClick : null}
+                style={{ cursor: isEditing ? 'pointer' : 'default' }}
+              >
+                <img 
+                  src={getProfileImage()}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.target.src = "https://tse2.mm.bing.net/th?id=OIP.AbGafkazjc_S1pZPh0B9cQHaIm&pid=Api&P=0&h=180"; }}
+                />
 
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center">
-                  <Camera className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" />
-                </div>
+                {isEditing && (
+                  <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                    <Camera className="w-8 h-8 text-white cursor-pointer" />
+                  </div>
+                )}
               </div>
+              {/* Hidden file input */}
+              <input 
+                type="file" 
+                ref={fileInputRef}
+                className="hidden" 
+                accept="image/*"
+                onChange={handleImageChange}
+              />
             </div>
 
             <div className="mt-4 text-center">
@@ -308,86 +364,101 @@ const UserProfile = () => {
         <div className="bg-white rounded-2xl p-8 shadow-xl transition-all duration-300 hover:shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-8">
             {activeSection === 'profile' && (
-              <div className="grid md:grid-cols-2 gap-8">
-                {/* Personal Information */}
-                <div className="space-y-6">
-                  <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                    <User className="w-5 h-5 text-green-500" />
-                    Personal Information
-                  </h2>
-                  
-                  {[
-                    { icon: User, name: 'name', label: 'Name', value: userForm.name },
-                    { icon: Mail, name: 'email', label: 'Email', value: userForm.email },
-                    { icon: Phone, name: 'phone', label: 'Phone', value: userForm.phone },
-                    { icon: MapPin, name: 'address', label: 'Address', value: userForm.address }
-                  ].map((field) => (
-                    <div key={field.name} className="group">
-                      <label className="text-sm text-gray-600 mb-1 block">{field.label}</label>
-                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg group-hover:bg-green-50 transition-colors">
-                        <field.icon className="w-5 h-5 text-green-500" />
-                        {isEditing && field.name !== 'address' ? (
-                          <input
-                            type="text"
-                            name={field.name}
-                            value={field.value}
-                            onChange={handleInputChange}
-                            className="flex-1 bg-transparent outline-none border-b-2 border-transparent focus:border-green-500 transition-colors"
-                          />
-                        ) : (
-                          <span className="text-gray-700">{field.value || 'Not provided'}</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Display role for Admin users */}
-                  {userType === 'admin' && (
-                    <div className="group">
-                      <label className="text-sm text-gray-600 mb-1 block">Role</label>
-                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg group-hover:bg-green-50 transition-colors">
-                        <Shield className="w-5 h-5 text-green-500" />
-                        <span className="text-gray-700">{userForm.role || 'Manager'}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Account Settings */}
-                <div className="space-y-6">
-                  <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-green-500" />
-                    Account Settings
-                  </h2>
-                  
-                  <div className="grid gap-4">
+              <>
+                <div className="grid md:grid-cols-2 gap-8">
+                  {/* Personal Information - Left Side */}
+                  <div className="space-y-6">
+                    <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                      <User className="w-5 h-5 text-green-500" />
+                      Personal Information
+                    </h2>
+                    
                     {[
-                      { name: 'preferences.twoFactor', label: 'Two-Factor Authentication', description: 'Add an extra layer of security to your account' },
-                      { name: 'preferences.newsletter', label: 'Email Newsletter', description: 'Receive updates about organic products and offers' },
-                      { name: 'preferences.notifications', label: 'Push Notifications', description: 'Get instant updates about your orders' }
-                    ].map((setting) => (
-                      <div key={setting.name} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-green-50 transition-colors">
-                        <div>
-                          <h3 className="font-medium text-gray-800">{setting.label}</h3>
-                          <p className="text-sm text-gray-600">{setting.description}</p>
+                      { icon: User, name: 'name', label: 'Name', value: userForm.name },
+                      { icon: Mail, name: 'email', label: 'Email', value: userForm.email },
+                      { icon: Phone, name: 'phone', label: 'Phone', value: userForm.phone },
+                    ].map((field) => (
+                      <div key={field.name} className="group">
+                        <label className="text-sm text-gray-600 mb-1 block">{field.label}</label>
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg group-hover:bg-green-50 transition-colors">
+                          <field.icon className="w-5 h-5 text-green-500" />
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              name={field.name}
+                              value={field.value}
+                              onChange={handleInputChange}
+                              className="flex-1 bg-transparent outline-none border-b-2 border-transparent focus:border-green-500 transition-colors"
+                            />
+                          ) : (
+                            <span className="text-gray-700">{field.value || 'Not provided'}</span>
+                          )}
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            name={setting.name}
-                            checked={setting.name.includes('.') ? 
-                              userForm[setting.name.split('.')[0]][setting.name.split('.')[1]] : 
-                              userForm[setting.name]}
-                            onChange={handleInputChange}
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
-                        </label>
+                      </div>
+                    ))}
+                    
+                    {/* Display role for Admin users */}
+                    {userType === 'admin' && (
+                      <div className="group">
+                        <label className="text-sm text-gray-600 mb-1 block">Role</label>
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg group-hover:bg-green-50 transition-colors">
+                          <Shield className="w-5 h-5 text-green-500" />
+                          <span className="text-gray-700">{userForm.role || 'Manager'}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Profile Image - Right Side */}
+                  <div className="flex justify-center items-center">
+                    <div className="w-full max-w-md h-60 rounded-2xl overflow-hidden border-4 border-gray-200 shadow-lg">
+                      <img 
+                        src="https://img.freepik.com/premium-vector/organic-food-products_24640-76351.jpg?w=2000"
+                        alt="Profile" 
+                        className="w-full h-full object-cover rounded-2xl"
+                        onError={(e) => { 
+                          e.target.src = "https://tse2.mm.bing.net/th?id=OIP.AbGafkazjc_S1pZPh0B9cQHaIm&pid=Api&P=0&h=180"; 
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Address Fields - Below */}
+                <div className="mt-8">
+                  <h3 className="text-lg font-medium text-gray-800 flex items-center gap-2 mb-4">
+                    <MapPin className="w-5 h-5 text-green-500" />
+                    Address Details
+                  </h3>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {[
+                      { name: 'streetOrSociety', label: 'Street/Society' },
+                      { name: 'cityVillage', label: 'City/Village' },
+                      { name: 'pincode', label: 'Pincode', type: 'number' },
+                      { name: 'state', label: 'State' },
+                      { name: 'country', label: 'Country' }
+                    ].map((field) => (
+                      <div key={field.name} className="group">
+                        <label className="text-sm text-gray-600 mb-1 block">{field.label}</label>
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg group-hover:bg-green-50 transition-colors">
+                          {isEditing ? (
+                            <input
+                              type={field.type || "text"}
+                              name={field.name}
+                              value={addressForm[field.name]}
+                              onChange={handleAddressChange}
+                              className="flex-1 bg-transparent outline-none border-b-2 border-transparent focus:border-green-500 transition-colors"
+                            />
+                          ) : (
+                            <span className="text-gray-700">{addressForm[field.name] || 'Not provided'}</span>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
-              </div>
+              </>
             )}
 
             {/* Save Changes Button */}
@@ -472,7 +543,8 @@ const UserProfile = () => {
 
         {/* Logout Button */}
         <div className="flex justify-center mt-8">
-          <button className="flex items-center gap-2 px-6 py-3 text-red-500 hover:text-red-600 transition-all duration-300 transform hover:-translate-y-1">
+          <button className="flex items-center gap-2 px-6 py-3 bg-red-500 text-white font-semibold rounded-lg shadow-md 
+                           hover:bg-red-600 hover:shadow-lg transition-all duration-300 hover:scale-105">
             <Logout/>
           </button>
         </div>
@@ -481,4 +553,4 @@ const UserProfile = () => {
   );
 };
 
-export default UserProfile;
+export default UserProfile; 
