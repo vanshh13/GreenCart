@@ -25,7 +25,7 @@ GreenCart is a web and mobile platform designed for the sale and management of o
 
 ### Backend
 - **Framework:** Node.js
-- **Authentication:** OAuth2, JWT
+- **Authentication:** JWT
 
 ### Database
 - **Type:** MongoDB (NoSQL)
@@ -53,12 +53,25 @@ GreenCart is a web and mobile platform designed for the sale and management of o
 4. **Set Up Environment Variables:**
    Create a `.env` file in the root directory and add the following:
    ```env
-   MONGO_URI=<your-mongodb-connection-string>
-   JWT_SECRET=<your-secret-key>
-   GOOGLE_CLIENT_ID=<your-google-client-id>
-   GOOGLE_CLIENT_SECRET=<your-google-client-secret>
-   FACEBOOK_APP_ID=<your-facebook-app-id>
-   FACEBOOK_APP_SECRET=<your-facebook-app-secret>
+   # MongoDB Database Credentials
+   DB_USER=your_db_username
+   DB_PASSWORD=your_db_password
+   
+   # JWT Secret for Authentication
+   JWT_SECRET=your_jwt_secret
+   
+   # Cloudinary Configuration (for image uploads)
+   CLOUDINARY_CLOUD_NAME=your_cloud_name
+   CLOUDINARY_API_KEY=your_cloudinary_api_key
+   CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+   
+   # Session Secret (used for session management)
+   SESSION_SECRET=your_session_secret
+   
+   # Razorpay Payment Gateway Keys
+   RAZORPAY_KEY_ID=your_razorpay_key_id
+   RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+
    ```
 5. **Start the Development Server:**
    ```bash
