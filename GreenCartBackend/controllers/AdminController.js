@@ -196,6 +196,7 @@ exports.stats  = async (req, res) => {
     const totalOrders = await Order.countDocuments();
     const totalProducts = await Product.countDocuments();
     const totalSales = await Order.aggregate([
+      { $match: { orderStatus: { $ne: "cancelled" } } }, // Exclude cancelled
       { $group: { _id: null, total: { $sum: "$totalPrice" } } }
     ]);
 console.log(totalUsers, totalOrders, totalProducts, totalSales);

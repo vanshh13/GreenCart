@@ -245,11 +245,11 @@ const AdminStatistics = () => {
                     <CreditCard size={20} className="text-blue-600" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold mb-2"><IndianRupee/>{overviewStats.totalSales?.toLocaleString()}</p>
-                <div className="flex items-center text-sm">
+                <p className="text-2xl font-bold mb-2">₹{overviewStats.totalSales?.toLocaleString()}</p>
+                {/* <div className="flex items-center text-sm">
                   {renderChangeIndicator(overviewStats.salesChange)}
                   <span className="text-gray-500 ml-2">vs. previous period</span>
-                </div>
+                </div> */}
               </motion.div>
               
               <motion.div
@@ -264,10 +264,10 @@ const AdminStatistics = () => {
                   </div>
                 </div>
                 <p className="text-2xl font-bold mb-2">{overviewStats.totalOrders?.toLocaleString()}</p>
-                <div className="flex items-center text-sm">
+                {/* <div className="flex items-center text-sm">
                   {renderChangeIndicator(overviewStats.ordersChange)}
                   <span className="text-gray-500 ml-2">vs. previous period</span>
-                </div>
+                </div> */}
               </motion.div>
               
               <motion.div
@@ -282,10 +282,10 @@ const AdminStatistics = () => {
                   </div>
                 </div>
                 <p className="text-2xl font-bold mb-2">{overviewStats.totalCustomers?.toLocaleString()}</p>
-                <div className="flex items-center text-sm">
+                {/* <div className="flex items-center text-sm">
                   {renderChangeIndicator(overviewStats.customersChange)}
                   <span className="text-gray-500 ml-2">vs. previous period</span>
-                </div>
+                </div> */}
               </motion.div>
               
               <motion.div
@@ -299,56 +299,12 @@ const AdminStatistics = () => {
                     <FileText size={20} className="text-amber-600" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold mb-2"><IndianRupee/>{overviewStats.averageOrderValue?.toFixed(2)}</p>
+                <p className="text-2xl font-bold mb-2">₹{overviewStats.averageOrderValue?.toFixed(2)}</p>
                 <div className="flex items-center text-sm">
                   <span className="text-gray-500">Conversion rate: {overviewStats.conversionRate}%</span>
                 </div>
               </motion.div>
             </div>
-            
-            {/* Visitors and Sales Chart */}
-            <Card className="shadow-md">
-              <CardHeader className="pb-0">
-                <CardTitle className="text-xl text-gray-800">Visitors & Orders Trend</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                      data={visitorStats}
-                      margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis yAxisId="left" />
-                      <YAxis yAxisId="right" orientation="right" />
-                      <Tooltip />
-                      <Legend />
-                      <Area
-                        yAxisId="left"
-                        type="monotone"
-                        dataKey="visitors"
-                        stackId="1"
-                        stroke="#8884d8"
-                        fill="#8884d8"
-                        fillOpacity={0.3}
-                        name="Visitors"
-                      />
-                      <Area
-                        yAxisId="right"
-                        type="monotone"
-                        dataKey="orders"
-                        stackId="2"
-                        stroke="#82ca9d"
-                        fill="#82ca9d"
-                        fillOpacity={0.3}
-                        name="Orders"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
             
             {/* Product Performance and Customer Ratings */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -371,7 +327,7 @@ const AdminStatistics = () => {
                         <Tooltip />
                         <Legend />
                         <Bar dataKey="sales" fill="#8884d8" name="Units Sold" />
-                        <Bar dataKey="revenue" fill="#82ca9d" name="Revenue ($)" />
+                        <Bar dataKey="revenue" fill="#82ca9d" name="Revenue (₹)" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -382,16 +338,16 @@ const AdminStatistics = () => {
               <Card className="shadow-md">
                 <CardHeader className="pb-0">
                   <div className="flex justify-between items-center">
-                    <CardTitle className="text-xl text-gray-800">Customer Ratings</CardTitle>
+                    <CardTitle className="text-xl text-gray-800">Sales by Payment Method</CardTitle>
                     <div className="flex items-center">
-                      <Star size={20} className="text-yellow-400 mr-1" />
-                      <span className="text-lg font-medium">4.4</span>
-                      <span className="text-sm text-gray-500 ml-1">/ 5</span>
+                      {/* <Star size={20} className="text-yellow-400 mr-1" /> */}
+                      {/* <span className="text-lg font-medium">4.4</span> */}
+                      {/* <span className="text-sm text-gray-500 ml-1">/ 5</span> */}
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-4">
-                  <div className="space-y-4 mb-6">
+                  {/* <div className="space-y-4 mb-6">
                     {ratingStats.map((item) => (
                       <div key={item.rating} className="flex items-center">
                         <span className="text-sm text-gray-600 w-16">{item.rating}</span>
@@ -407,11 +363,11 @@ const AdminStatistics = () => {
                         <span className="text-sm text-gray-400 w-12">({item.count})</span>
                       </div>
                     ))}
-                  </div>
+                  </div> */}
                   
                   {/* Payment Methods */}
                   <div>
-                    <h3 className="font-medium text-gray-700 mb-3">Sales by Payment Method</h3>
+                    {/* <h3 className="font-medium text-gray-700 mb-3">Sales by Payment Method</h3> */}
                     <div className="h-48">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>

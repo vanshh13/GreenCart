@@ -68,10 +68,22 @@ const AnalysisDashboard = () => {
       });
       console.log("User API Response:", userRes.data);
       
-      // Check if we have valid data before updating state
-      if (!salesRes.data || !Array.isArray(salesRes.data) || salesRes.data.length === 0) {
-        throw new Error("Invalid or empty sales data received from API");
+      if (!salesRes.data || !Array.isArray(salesRes.data)) {
+        throw new Error("Invalid sales data received from API");
       }
+      
+      if (salesRes.data.length === 0) {
+        setSalesData([]); // Still set empty sales data
+        setPerformanceMetrics({
+          revenue: { value: 0 },
+          orders: { value: 0 },
+          returnRate: { value: 0 },
+          users: { value: userRes.data?.total || 0 },
+        });
+        setApiError("No sales data available for the selected timeframe.");
+        return; // Skip the rest of the flow
+      }
+      
       
       if (!productRes.data || !Array.isArray(productRes.data) || productRes.data.length === 0) {
         throw new Error("Invalid or empty product data received from API");
@@ -139,23 +151,16 @@ const AnalysisDashboard = () => {
     setPerformanceMetrics({
       revenue: { 
         value: totalRevenue, 
-        percentage: 12.5, // From API or calculate from historical data
-        isPositive: true
       },
       orders: { 
         value: totalOrders, 
-        percentage: 8.3,
-        isPositive: true
       },
       returnRate: { 
         value: returnRate, 
-        percentage: 2.1,
-        isPositive: false // For return rate, lower is better
       },
       users: { 
         value: users.total || 0, 
-        percentage: 15.7,
-        isPositive: true
+
       }
     });
   };
@@ -289,10 +294,7 @@ const AnalysisDashboard = () => {
                     {performanceMetrics.revenue.value.toLocaleString()}
                   </p>
                   <span className={`flex items-center ${performanceMetrics.revenue.isPositive ? 'text-green-500' : 'text-red-500'} ml-2 text-sm`}>
-                    {performanceMetrics.revenue.isPositive ? 
-                      <ArrowUpRight className="h-3 w-3" /> : 
-                      <ArrowDownRight className="h-3 w-3" />}
-                    {performanceMetrics.revenue.percentage}%
+                    {performanceMetrics.revenue.percentage}
                   </span>
                 </div>
               </div>
@@ -314,58 +316,7 @@ const AnalysisDashboard = () => {
                     {performanceMetrics.orders.value.toLocaleString()}
                   </p>
                   <span className={`flex items-center ${performanceMetrics.orders.isPositive ? 'text-green-500' : 'text-red-500'} ml-2 text-sm`}>
-                    {performanceMetrics.orders.isPositive ? 
-                      <ArrowUpRight className="h-3 w-3" /> : 
-                      <ArrowDownRight className="h-3 w-3" />}
-                    {performanceMetrics.orders.percentage}%
-                  </span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-          
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="bg-white rounded-lg shadow p-4"
-          >
-            <div className="flex items-center">
-              <div className="rounded-full p-3 bg-red-100">
-                <Calendar className="h-6 w-6 text-red-600" />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-500">Return Rate</p>
-                <div className="flex items-center">
-                  <p className="text-xl font-bold">
-                    {performanceMetrics.returnRate.value.toFixed(1)}%
-                  </p>
-                  <span className={`flex items-center ${!performanceMetrics.returnRate.isPositive ? 'text-green-500' : 'text-red-500'} ml-2 text-sm`}>
-                    {!performanceMetrics.returnRate.isPositive ? 
-                      <ArrowDownRight className="h-3 w-3" /> : 
-                      <ArrowUpRight className="h-3 w-3" />}
-                    {performanceMetrics.returnRate.percentage}%
-                  </span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-          
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="bg-white rounded-lg shadow p-4"
-          >
-            <div className="flex items-center">
-              <div className="rounded-full p-3 bg-purple-100">
-                <Users className="h-6 w-6 text-purple-600" />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-500">Active Users</p>
-                <div className="flex items-center">
-                  <p className="text-xl font-bold">{userStats.total.toLocaleString()}</p>
-                  <span className={`flex items-center ${performanceMetrics.users.isPositive ? 'text-green-500' : 'text-red-500'} ml-2 text-sm`}>
-                    {performanceMetrics.users.isPositive ? 
-                      <ArrowUpRight className="h-3 w-3" /> : 
-                      <ArrowDownRight className="h-3 w-3" />}
-                    {performanceMetrics.users.percentage}%
+                    {performanceMetrics.orders.percentage}
                   </span>
                 </div>
               </div>
@@ -485,7 +436,7 @@ const AnalysisDashboard = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex items-center">
                             <IndianRupee className="h-3 w-3 mr-1" />
-                            {(product.sales * 12.99).toFixed(2)}
+                            {(product.value).toFixed(2)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
@@ -504,75 +455,6 @@ const AnalysisDashboard = () => {
               )}
             </CardContent>
           </Card>
-
-
-          <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">User Segments</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {userStats.total > 0 ? (
-          <>
-            <ResponsiveContainer width="100%" height={300}> 
-              <PieChart>
-                <Pie
-                  data={[
-                    { name: "New Users", value: userStats.new },
-                    { name: "Returning Users", value: userStats.returning },
-                    { name: "Inactive Users", value: userStats.total - userStats.new - userStats.returning },
-                  ]}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50} // Reduced inner radius
-                  outerRadius={70} // Reduced outer radius
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent, x, y }) => (
-                    <text
-                      x={x}
-                      y={y}
-                      fill="black"
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                      fontSize="12px"
-                      fontWeight="bold"
-                    >
-                      {`${name} ${(percent * 100).toFixed(0)}%`}
-                    </text>
-                  )}
-                  labelLine={false}
-                >
-                  {COLORS.map((color, index) => (
-                    <Cell key={`cell-${index}`} fill={color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-            {/* Legend */}
-            <div className="mt-4 space-y-2">
-              {[
-                { label: "New Users", color: "bg-blue-500", value: userStats.new },
-                { label: "Returning Users", color: "bg-green-500", value: userStats.returning },
-                { label: "Inactive Users", color: "bg-yellow-500", value: userStats.total - userStats.new - userStats.returning },
-              ].map(({ label, color, value }) => (
-                <div key={label} className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full ${color} mr-2`}></div>
-                    <span className="text-sm text-gray-600">{label}</span>
-                  </div>
-                  <span className="text-sm font-medium">{value}</span>
-                </div>
-              ))}
-            </div>
-          </>
-        ) : (
-          <div className="flex items-center justify-center h-64 bg-gray-50 rounded">
-            <p className="text-gray-500">No user data available</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
         </div>
       </motion.div>
     </div>

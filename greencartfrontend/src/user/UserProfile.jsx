@@ -516,7 +516,7 @@ const UserProfile = () => {
                         </span>
                       </div>
 
-                      <p className="text-gray-700 mt-2">Total: ${order.totalPrice}</p>
+                      <p className="text-gray-700 mt-2">Total: ₹{order.totalPrice}</p>
                       <p className="text-gray-500 text-sm">
                         Date: {new Date(order.orderDate).toLocaleDateString()}
                       </p>

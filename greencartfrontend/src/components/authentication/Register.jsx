@@ -5,9 +5,9 @@ import { Button } from '../ui/Button';
 import { Leaf, Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
 import SocialLogin from './SocialLogin';
 import { registerUser } from "../../api";
-import { useNavigate } from "react-router-dom"; // Import navigation hook
+import { useNavigate } from "react-router-dom";
 
-const Register = ({ onSwitchToLogin,showNotification }) => {
+const Register = ({ onSwitchToLogin, showNotification }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     UserName: "",
@@ -18,13 +18,51 @@ const Register = ({ onSwitchToLogin,showNotification }) => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+
+  // Password validation function
+  const validatePassword = (password) => {
+    const errors = [];
+    
+    if (password.length < 6) {
+      errors.push("Password must be at least 6 characters long");
+    }
+    
+    if (!/[A-Z]/.test(password)) {
+      errors.push("Password must contain at least one capital letter");
+    }
+    
+    if (!/[0-9]/.test(password)) {
+      errors.push("Password must contain at least one digit");
+    }
+    
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+      errors.push("Password must contain at least one special character");
+    }
+    
+    return errors;
+  };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    
+    // Check password strength when user types in password field
+    if (name === "Password") {
+      const errors = validatePassword(value);
+      setPasswordError(errors.length > 0 ? errors.join(", ") : "");
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate password before submission
+    const passwordErrors = validatePassword(formData.Password);
+    if (passwordErrors.length > 0) {
+      setPasswordError(passwordErrors.join(", "));
+      return;
+    }
     
     if (formData.Password !== formData.confirmPassword) {
       alert("Passwords do not match!");
@@ -124,6 +162,13 @@ const Register = ({ onSwitchToLogin,showNotification }) => {
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
+            {passwordError && (
+              <p className="text-xs text-red-500 mt-1">{passwordError}</p>
+            )}
+            <p className="text-xs text-gray-500 mt-1">
+              Password must be at least 6 characters long and contain at least one capital letter, 
+              one digit, and one special character.
+            </p>
           </div>
 
           {/* Confirm Password Field */}
@@ -148,6 +193,9 @@ const Register = ({ onSwitchToLogin,showNotification }) => {
                 {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
+            {formData.confirmPassword && formData.Password !== formData.confirmPassword && (
+              <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+            )}
           </div>
 
           {/* Submit Button */}

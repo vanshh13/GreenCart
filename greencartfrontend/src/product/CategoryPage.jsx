@@ -2,11 +2,33 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { ShoppingCart, Package, Loader2, Heart, ArrowUpDown, Star } from "lucide-react";
+import { ShoppingCart, Package, CheckCircle, AlertCircle , Loader2, Heart, ArrowUpDown, Star } from "lucide-react";
 import { addProductToCart } from "../api"; // Make sure this path is correct
 import QuickViewModal from "../product/QuickViewModel"; // Adjust the path if needed
 import { useNavigate } from "react-router-dom";
 import BackButton from "../components/ui/BackButton";
+
+const Notification = ({ message, type, isVisible }) => {
+  if (!isVisible) return null;
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -50 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -50 }}
+      className={`fixed top-6 right-6 z-50 p-4 rounded-lg shadow-lg flex items-center ${
+        type === "success" ? "bg-emerald-500" : "bg-red-500"
+      } text-white max-w-md`}
+    >
+      {type === "success" ? (
+        <CheckCircle className="w-5 h-5 mr-2" />
+      ) : (
+        <AlertCircle className="w-5 h-5 mr-2" />
+      )}
+      <p>{message}</p>
+    </motion.div>
+  );
+};
 
 
 const ProductCard = ({ product, addToCart,onNotification }) => {
@@ -74,6 +96,7 @@ const ProductCard = ({ product, addToCart,onNotification }) => {
   const handleAddToCart = async () => {
     setIsLoading(true);
     await addToCart(product);
+    onNotification?.("Add to Cart", "success");
     setIsLoading(false);
   };
 
@@ -163,19 +186,6 @@ const ProductCard = ({ product, addToCart,onNotification }) => {
 
       {/* Product Info */}
       <div className="p-4">
-        {/* Rating */}
-        <div className="flex items-center mb-2">
-          <div className="flex text-amber-400">
-            {[...Array(5)].map((_, i) => (
-              <Star 
-                key={i} 
-                className="w-4 h-4 mr-1" 
-                fill={i < Math.floor(rating) ? "currentColor" : "none"}
-              />
-            ))}
-          </div>
-          <span className="text-xs text-gray-500 ml-1">{rating}</span>
-        </div>
         
         {/* Title */}
         <h3 className="text-base font-medium text-gray-800 mb-1 line-clamp-2 h-12">
@@ -243,6 +253,7 @@ const CategoryPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortOption, setSortOption] = useState("featured");
+  const [notification, setNotification] = useState({ show: false, message: "" });
   
   useEffect(() => {
     const fetchProducts = async () => {
@@ -264,6 +275,13 @@ const CategoryPage = () => {
     fetchProducts();
   }, [category]);
 
+  const showNotification = (message, type = "success") => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification({ show: false, message: "" });
+    }, 3000);
+  };
+
   const addToCart = async (product) => {
     try {
       const token = localStorage.getItem("authToken");
@@ -278,8 +296,10 @@ const CategoryPage = () => {
 
       const response = await addProductToCart(cart, token);
       const data = response.data;
+      showNotification("Item added to cart successfully!");
       console.log("Item added successfully:", data);
     } catch (error) {
+      showNotification("Failed to add item to cart", "error");
       console.error("Error adding to cart:", error.message);
     }
   };
@@ -323,6 +343,12 @@ const CategoryPage = () => {
 
   return (
     <div className="min-h-screen bg-white">
+    {/* Notification Component */}
+    <Notification 
+        message={notification.message} 
+        type={notification.type} 
+        isVisible={notification.isVisible} 
+      />
       {/* Category Header */}
       <div className="bg-gradient-to-r from-emerald-50 to-teal-50 py-10">
         <motion.div

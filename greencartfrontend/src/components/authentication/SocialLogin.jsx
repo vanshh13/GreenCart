@@ -10,7 +10,7 @@ const SocialLogin = () => {
 
   return (
     <div className="flex flex-col space-y-2">
-      <Button
+      {/* <Button
         className="w-full flex items-center justify-center bg-red-600 hover:bg-red-700 text-white py-2"
         onClick={() => handleSocialLogin("Google")}
       >
@@ -24,7 +24,7 @@ const SocialLogin = () => {
       >
         <FaFacebook size={24} className="mr-3" />
         Continue with Facebook
-      </Button>
+      </Button> */}
     </div>
   );
 };

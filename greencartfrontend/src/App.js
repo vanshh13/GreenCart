@@ -156,6 +156,7 @@ const App = () => {
           <Routes>
             <Route path="/authpage" element={<AuthPage />} />
             <Route path="/blog" element={<Blog />} />
+            <Route path="/products" element={<ProductsGrid />} />
             <Route path="/" element={<HomePage />} />
             <Route path="/home" element={<ProtectedRoute element={<HomePage />} allowedRoles={["Customer"]} />} />
             <Route path="/user/profile" element={<ProtectedRoute element={<UserProfile />} allowedRoles={["Customer"]} />} />

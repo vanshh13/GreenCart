@@ -75,8 +75,14 @@ const productDetailsData = await Promise.all(productRequests);
         addressDetails: addressesData[index] || {},
         productDetailsData: productDetailsData[index] || []
       }));
-      setOrders(updatedOrders);
-      setFilteredOrders(updatedOrders);
+      // Sort orders by date (newest first)
+      const sortedOrders = updatedOrders.sort((a, b) => {
+        return new Date(b.orderDate) - new Date(a.orderDate);
+      });
+      
+      setOrders(sortedOrders);
+      setFilteredOrders(sortedOrders);
+
     } catch (error) {
       console.error("Error fetching orders:", error);
     } finally {

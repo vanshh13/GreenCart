@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Input } from "../components/ui/Input";
 import { Star, CheckCircle } from "lucide-react"; // Import missing icons
 import { Droplet as Drop, Sprout as Seedling } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import {
   Facebook,
@@ -212,16 +213,24 @@ const Footer = () => {
             <div className="space-y-6">
               <h3 className="text-xl font-semibold text-green-400">Quick Links</h3>
               <ul className="space-y-4">
-                {["About Us", "Products", "Blog", "Contact"].map((link) => (
-                  <li
-                    key={link}
-                    className="text-gray-400 hover:text-green-400 cursor-pointer transition-all duration-300 hover:translate-x-2 flex items-center space-x-2"
-                  >
-                    <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <span>{link}</span>
-                  </li>
-                ))}
-              </ul>
+  {[
+    { name: "About Us", path: "/about" },
+    { name: "Products", path: "/products" },
+    { name: "Blog", path: "/blog" },
+    { name: "Contact", path: "/" }
+  ].map((link) => (
+    <li
+      key={link.name}
+      className="text-gray-400 hover:text-green-400 cursor-pointer transition-all duration-300 hover:translate-x-2 flex items-center space-x-2"
+    >
+      <Link to={link.path} className="flex items-center space-x-2 group">
+        <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <span>{link.name}</span>
+      </Link>
+    </li>
+  ))}
+</ul>
+
             </div>
 
             {/* Contact Info */}
@@ -231,7 +240,7 @@ const Footer = () => {
                 {[
                   { icon: <Mail className="w-5 h-5" />, text: "support@greencart.com" },
                   { icon: <Phone className="w-5 h-5" />, text: "+1 234 567 890" },
-                  { icon: <MapPin className="w-5 h-5" />, text: "123 Green Street, NY" }
+                  { icon: <MapPin className="w-5 h-5" />, text: "123 Green Street, IND" }
                 ].map((item, index) => (
                   <div key={index} className="flex items-center space-x-3 text-gray-400 hover:text-green-400 transition-colors duration-300">
                     <div className="text-green-400">{item.icon}</div>
@@ -273,9 +282,9 @@ const Footer = () => {
           {/* Social Links & Copyright */}
           <div className="mt-16 pt-8 border-t border-gray-800">
             <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-              <p className="text-gray-400">
-                © 2024 GreenCart. All rights reserved.
-              </p>
+            <p className="text-gray-400">
+              © {new Date().getFullYear()} GreenCart. All rights reserved.
+            </p>
               <div className="flex space-x-8">
                 {socialLinks.map((social, index) => (
                   <a

@@ -184,99 +184,150 @@ exports.getUser = async (req, res) => {
 // Updated controller function for user profile
 exports.updateUser = async (req, res) => {
   try {
-    const userId = req.user.id; // Get user ID from token
+    const userId = req.user.id; // User ID from token
     let updates = req.body;
-    
-    // Hash password only if it's being updated
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Hash password if updated
     if (updates.Password) {
       updates.Password = await bcrypt.hash(updates.Password, 10);
     }
-    
-    let customerImageUrl = null;
-    
-    // Handle Cloudinary upload for Image
+
+    let imageUrl = null;
+
+    // Upload Image if provided
     if (req.body.Image) {
       const uploadedResponse = await cloudinary.uploader.upload(req.body.Image, {
-        folder: "customer_images",
+        folder: "profile_images",
       });
-      customerImageUrl = uploadedResponse.secure_url;
+      imageUrl = uploadedResponse.secure_url;
     }
-    
-    // Update User Model
-    const updatedUser = await User.findByIdAndUpdate(userId, {
-      UserName: updates.UserName,
-      UserEmail: updates.UserEmail,
-      ...(updates.Password && { Password: updates.Password }), // Update only if provided
-    }, { new: true }).select("-Password");
-    
+
+    // Update User basic info
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        UserName: updates.UserName,
+        UserEmail: updates.UserEmail,
+        // ...(updates.Password && { Password: updates.Password }),
+      },
+      { new: true }
+    ).select("-Password");
+
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
     }
-    
-    // Handle address for customer
-    let addressId = null;
-    if (updates.CustomerAddress) {
-      // Create or update address
-      const addressData = {
-        streetOrSociety: updates.CustomerAddress.streetOrSociety,
-        cityVillage: updates.CustomerAddress.cityVillage,
-        pincode: updates.CustomerAddress.pincode,
-        state: updates.CustomerAddress.state,
-        country: updates.CustomerAddress.country,
-        ownerModel: 'Customer'
-      };
-      
-      // Find if customer already has an address
-      const customer = await Customer.findOne({ user: userId }).populate('CustomerAddress');
-      
-      if (customer && customer.CustomerAddress && customer.CustomerAddress.length > 0) {
-        // Update existing address
-        addressId = customer.CustomerAddress[0]._id;
-        await Address.findByIdAndUpdate(addressId, addressData);
-      } else {
-        // Create new address
-        const newAddress = new Address(addressData);
-        const savedAddress = await newAddress.save();
-        addressId = savedAddress._id;
+
+    let updatedProfile = null;
+
+    if (user.UserType === "Customer") {
+      // ---- Handle Customer update ----
+      let addressId = null;
+
+      if (updates.CustomerAddress) {
+        const addressData = {
+          streetOrSociety: updates.CustomerAddress.streetOrSociety,
+          cityVillage: updates.CustomerAddress.cityVillage,
+          pincode: updates.CustomerAddress.pincode,
+          state: updates.CustomerAddress.state,
+          country: updates.CustomerAddress.country,
+          ownerModel: "Customer",
+        };
+
+        const customer = await Customer.findOne({ user: userId }).populate("CustomerAddress");
+
+        if (customer && customer.CustomerAddress?.length > 0) {
+          addressId = customer.CustomerAddress[0]._id;
+          await Address.findByIdAndUpdate(addressId, addressData);
+        } else {
+          const newAddress = new Address(addressData);
+          const savedAddress = await newAddress.save();
+          addressId = savedAddress._id;
+        }
       }
+
+      const customerUpdateData = {
+        CustomerName: updates.UserName,
+        CustomerEmail: updates.UserEmail,
+        ...(updates.CustomerContact && { CustomerContact: updates.CustomerContact }),
+        ...(imageUrl && { Image: imageUrl }),
+      };
+
+      if (addressId) {
+        customerUpdateData.CustomerAddress = [addressId];
+      }
+
+      updatedProfile = await Customer.findOneAndUpdate(
+        { user: userId },
+        customerUpdateData,
+        { new: true }
+      );
+    } 
+    else if (user.UserType === "Admin") {
+      // ---- Handle Admin update ----
+      let addressId = null;
+      if (updates.adminAddress) {
+        const addressData = {
+          streetOrSociety: updates.adminAddress.streetOrSociety,
+          cityVillage: updates.adminAddress.cityVillage,
+          pincode: updates.adminAddress.pincode,
+          state: updates.adminAddress.state,
+          country: updates.adminAddress.country,
+          ownerModel: "Admin",
+        };
+console.log(addressData);
+        const admin = await Admin.findOne({ user: userId }).populate("adminAddress");
+
+        if (admin && admin.adminAddress) {
+          addressId = admin.adminAddress._id;
+          await Address.findByIdAndUpdate(addressId, addressData);
+        } else {
+          const newAddress = new Address(addressData);
+          const savedAddress = await newAddress.save();
+          addressId = savedAddress._id;
+        }
+      }
+
+      const adminUpdateData = {
+        adminName: updates.UserName,
+        adminEmail: updates.UserEmail,
+        ...(updates.AdminContact && { adminContact: updates.AdminContact }),
+        ...(imageUrl && { Image: imageUrl }),
+      };
+
+      if (addressId) {
+        adminUpdateData.adminAddress = addressId;
+      }
+
+      updatedProfile = await Admin.findOneAndUpdate(
+        { user: userId },
+        adminUpdateData,
+        { new: true }
+      );
+    } 
+    else {
+      return res.status(400).json({ message: "Invalid user type" });
     }
-    
-    // Prepare customer update data
-    const customerUpdateData = {
-      CustomerName: updates.UserName,
-      CustomerEmail: updates.UserEmail,
-      ...(updates.CustomerContact && { CustomerContact: updates.CustomerContact }),
-      ...(customerImageUrl && { Image: customerImageUrl }),
-    };
-    
-    // Add address reference if we have one
-    if (addressId) {
-      customerUpdateData.CustomerAddress = [addressId];
+
+    if (!updatedProfile) {
+      return res.status(404).json({ message: "Profile not found" });
     }
-    
-    // Update Customer Model
-    const updatedCustomer = await Customer.findOneAndUpdate(
-      { user: userId }, // Find customer linked to this user
-      customerUpdateData,
-      { new: true }
-    );
-    
-    if (!updatedCustomer) {
-      return res.status(404).json({ message: "Customer record not found" });
-    }
-    
+
     res.status(200).json({
       message: "Profile updated successfully",
       user: updatedUser,
-      customer: updatedCustomer,
+      profile: updatedProfile,
     });
+
   } catch (error) {
     console.error("Error updating profile:", error);
     res.status(500).json({ error: error.message });
   }
 };
-
-
 
 // Delete a User
 exports.deleteUser = async (req, res) => {
