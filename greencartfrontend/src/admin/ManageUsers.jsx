@@ -15,8 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Toast } from "../components/ui/Toast";
 import { NavLink } from "react-router-dom";
 import Notification from '../components/ui/notification/Notification';
-
-const API_URL = "http://localhost:5000/api/users"; // Backend API for users
+import { fetchAllUsers, addNewUser, deleteUserById, fetchAdminRoleById, fetchCurrentUser,updateAdminRoleById } from "../api";
 
 const ManageUsers = () => {
   const [notificationMessage, setNotificationMessage] = useState("");
@@ -64,51 +63,95 @@ const ManageUsers = () => {
       setTimeout(() => setNotification({ message: "", type: "", show: false }), 3000);
     };
 
-  // Fetch current logged-in user on component mount
- useEffect(() => {
-  const fetchCurrentUser = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/current`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` }
-      });
-      setCurrentLoggedInUser(response.data);
-      console.log(response.data);
-    } catch (error) {
-      showNotification("Failed to fetch current user information", "error");
-    }
-  };
-
-  fetchCurrentUser();
-  fetchUsers();
-}, []);
-
-useEffect(() => {
-  const fetchAdminRoles = async () => {
-    try {
-      const updatedUsers = await Promise.all(users.map(async (user) => {
-        if (user.UserType !== "Admin") {
-          return user; // Skip fetching role, return user as is
-        }
-        
+    useEffect(() => {
+      const loadUsers = async () => {
         try {
-          const response = await axios.get(`http://localhost:5000/api/admins/role/${user._id}`);
-          return { ...user, role: response.data.role }; // Merge role into user object
-        } catch (error) {
-          console.error(`Error fetching admin role for user ${user._id}:`, error);
-          return { ...user, role: "N/A" }; // Default role if not found
+          const res = await fetchCurrentUser();
+          setCurrentLoggedInUser(res.data);
+          console.log(res.data);
+        } catch (err) {
+          showNotification("Failed to fetch current user information", "error");
         }
-      }));
+    
+        fetchUsers();
+      };
+    
+      loadUsers();
+    }, []);
 
-      setFilteredUsers(updatedUsers);
-    } catch (error) {
-      console.error("Error fetching admin roles:", error);
-    }
-  };
+    const fetchUsers = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetchAllUsers();
+        let fetchedUsers = response.data.users;
+    
+        const updatedUsers = await Promise.all(
+          fetchedUsers.map(async (user) => {
+            if (user.UserType !== "Admin") return user;
+    
+            try {
+              const roleRes = await fetchAdminRoleById(user._id);
+              return { ...user, role: roleRes.data.role };
+            } catch {
+              return { ...user, role: "N/A" };
+            }
+          })
+        );
+    
+        setUsers(updatedUsers);
+      } catch {
+        showNotification("Failed to fetch users", "error");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  if (users.length > 0) {
-    fetchAdminRoles();
-  }
-}, [users]);
+    const handleAddUser = async (e) => {
+      e.preventDefault();
+      try {
+        const dataToSend = formData.UserType === "Admin"
+          ? {
+              ...formData,
+              adminName: formData.UserName,
+              adminEmail: formData.UserEmail,
+              password: formData.Password,
+            }
+          : formData;
+    
+        await addNewUser(dataToSend);
+    
+        showNotification(`${formData.UserType} added successfully`, "success");
+        setShowAddDialog(false);
+        fetchUsers();
+        setFormData({
+          UserName: "",
+          UserEmail: "",
+          UserType: "Admin",
+          Password: "",
+          role: "admin",
+          active: true,
+          adminContact: "",
+        });
+      } catch (error) {
+        showNotification(error.response?.data?.message || "Failed to add user", "error");
+      }
+    };
+
+    const handleDeleteUser = async () => {
+      if (!userToDelete) return;
+    
+      try {
+        const response = await deleteUserById(userToDelete._id);
+        console.log("API Response:", response);
+        showNotification("User deleted successfully", "success");
+        setShowDeleteConfirmDialog(false);
+        setUserToDelete(null);
+        fetchUsers();
+      } catch (error) {
+        showNotification(error.response?.data?.message || "Failed to delete user", "error");
+      }
+    };
+    
 
 // Filter users based on search term and selected user type
 useEffect(() => {
@@ -129,54 +172,6 @@ useEffect(() => {
 
   setFilteredUsers(result);
 }, [users, searchTerm, selectedUserType]);
-
-// Fetch users from backend and assign roles
-const fetchUsers = async () => {
-  setIsLoading(true);
-  try {
-    const response = await axios.get(API_URL, {
-      headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` }
-    });
-
-    let fetchedUsers = response.data.users;
-
-    // Fetch admin roles for admins only
-    const updatedUsers = await Promise.all(
-      fetchedUsers.map(async (user) => {
-        if (user.UserType !== "Admin") {
-          return user; // Return user as is
-        }
-        
-        try {
-          const response = await axios.get(`http://localhost:5000/api/admins/role/${user._id}`);
-          return { ...user, role: response.data.role }; // Add role to user object
-        } catch (error) {
-          console.error(`Error fetching admin role for user ${user._id}:`, error);
-          return { ...user, role: "N/A" }; // Default role if fetching fails
-        }
-      })
-    );
-
-    setUsers(updatedUsers);
-    setIsLoading(false);
-  } catch (error) {
-    showNotification("Failed to fetch users", "error");
-    setIsLoading(false);
-  }
-};
-
-// Check if current user can edit another admin's role
-const canEditAdminRole = (adminToEdit) => {
-  if (!currentLoggedInUser || !adminToEdit) return false;
-  if (currentLoggedInUser.user._id === adminToEdit._id) return false; // Can't edit own role
-  // Only users with admin role can edit manager role
-  if (currentLoggedInUser.admin.role === "Admin" && adminToEdit.role === "Manager") {
-    return true;
-  }
-  
-  return false;
-};
-
  
 const handleInputChange = (event) => {
   const { name, value, type, checked } = event.target;
@@ -184,77 +179,6 @@ const handleInputChange = (event) => {
     ...prev,
     [name]: type === "checkbox" ? checked : value,
   }));
-};
-
-
-// Add New User (Customer or Admin)
-const handleAddUser = async (e) => {
-  e.preventDefault();
-  try {
-    // Format data based on user type
-    const dataToSend = formData.UserType === "Admin" 
-      ? {
-          ...formData,
-          adminName: formData.UserName,
-          adminEmail: formData.UserEmail,
-          password: formData.Password
-        }
-      : formData;
-
-    const response = await axios.post(API_URL, dataToSend, {
-      headers: { 
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("authToken")}` 
-      }
-    });
-    
-    showNotification(`${formData.UserType === "Admin" ? "Admin" : "User"} added successfully`, "success");
-    setShowAddDialog(false);
-    fetchUsers();
-    
-    // Reset form
-    setFormData({
-      UserName: "",
-      UserEmail: "",
-      UserType: "Admin",
-      Password: "",
-      role: "admin",
-      active: true,
-      adminContact: "",
-    });
-  } catch (error) {
-    showNotification(error.response?.data?.message || "Failed to add user", "error");
-  }
-};
-
-// Update User Role (for admin users only)
-const handleUpdateAdminRole = async (e) => {
-  e.preventDefault();
-  if (!adminToEditRole || !formData.role) {
-    showNotification("Invalid data provided", "error");
-    return;
-  }
-  console.log("Admin to edit role:", adminToEditRole);
-  try {
-    const response = await axios.put(
-      `http://localhost:5000/api/admins/${adminToEditRole._id}/role`, 
-      { role: formData.role },
-      {
-        headers: { 
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("authToken")}` 
-        }
-      }
-    );
-
-    showNotification(response.data.message, "success");
-    fetchUsers();
-    setShowEditRoleDialog(false);
-    setAdminToEditRole(null);
-  } catch (error) {
-    console.error("Update role error:", error.response?.data || error.message);
-    showNotification(error.response?.data?.message || "Failed to update admin role", "error");
-  }
 };
 
 // Open edit role dialog for admin
@@ -309,28 +233,60 @@ const confirmDeleteUser = (user) => {
   setShowDeleteConfirmDialog(true);
 };
 
-// Handle delete user
-const handleDeleteUser = async () => {
-  if (!userToDelete) return;
-  setShowDeleteConfirmDialog(true);
-  try {
-    const response = await axios.delete(`${API_URL}/${userToDelete._id}`, {
-      headers: { 
-        Authorization: `Bearer ${localStorage.getItem("authToken")}` 
-      }
-    });
+const handleUpdateAdminRole = async (e) => {
+  e.preventDefault();
 
-    console.log("API Response:", response);
-    showNotification("User deleted successfully", "success");
-    setShowDeleteConfirmDialog(false);
-    setUserToDelete(null);
+  if (!adminToEditRole || !formData.role) {
+    showNotification("Invalid data provided", "error");
+    return;
+  }
+
+  try {
+    const res = await updateAdminRoleById(adminToEditRole._id, formData.role);
+    showNotification(res.data.message, "success");
     fetchUsers();
+    setShowEditRoleDialog(false);
+    setAdminToEditRole(null);
   } catch (error) {
-    console.error("Delete user API error:", error.response?.data || error);
-    showNotification(error.response?.data?.message || "Failed to delete user", "error");
+    console.error("Update role error:", error.response?.data || error.message);
+    showNotification(error.response?.data?.message || "Failed to update admin role", "error");
   }
 };
 
+useEffect(() => {
+  const fetchAdminRoles = async () => {
+    try {
+      const updatedUsers = await Promise.all(users.map(async (user) => {
+        if (user.UserType !== "Admin") return user;
+
+        try {
+          const res = await fetchAdminRoleById(user._id);
+          return { ...user, role: res.data.role };
+        } catch {
+          return { ...user, role: "N/A" };
+        }
+      }));
+
+      setFilteredUsers(updatedUsers);
+    } catch (error) {
+      console.error("Error fetching admin roles:", error);
+    }
+  };
+
+  if (users.length > 0) fetchAdminRoles();
+}, [users]);
+
+// Check if current user can edit another admin's role
+const canEditAdminRole = (adminToEdit) => {
+  if (!currentLoggedInUser || !adminToEdit) return false;
+  if (currentLoggedInUser.user._id === adminToEdit._id) return false; // Can't edit own role
+  // Only users with admin role can edit manager role
+  if (currentLoggedInUser.admin.role === "Admin" && adminToEdit.role === "Manager") {
+    return true;
+  }
+  
+  return false;
+};
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Edit2, Trash2, Search, Plus, Eye, ChevronDown, Filter, IndianRupee } from 'lucide-react';
+import { Edit2, Search, Plus, Eye, ChevronDown, Filter, IndianRupee } from 'lucide-react';
 import Notification from '../components/ui/notification/Notification';
-import { fetchProducts, updateProduct, deleteProduct } from '../api';
+import {  updateProduct, fetchAllProductsAPI, uploadImages, deleteProduct } from '../api';
 import { motion, AnimatePresence } from "framer-motion";
 import AdminNavbar from '../components/AdminNavigation';
 import { NavLink } from 'react-router-dom';
@@ -43,17 +42,17 @@ const ManageProducts = () => {
   };
 
   useEffect(() => {
-    const fetchProductData = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get('http://localhost:5000/api/products');
-        setProducts(response.data);
-      } catch (err) {
-        setError('Failed to fetch products');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchProductData = async () => {
+    setLoading(true);
+    try {
+      const response = await fetchAllProductsAPI(); // ✅ centralized API call
+      setProducts(response.data);
+    } catch (err) {
+      setError("Failed to fetch products");
+    } finally {
+      setLoading(false);
+    }
+  };
     fetchProductData();
   }, []);
 
@@ -88,16 +87,7 @@ const ManageProducts = () => {
   
       // 🔹 Upload new images if available
       if (newImages.length > 0) {
-        const uploadResponse = await axios.post(
-          "http://localhost:5000/api/upload",
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
+        const uploadResponse = await uploadImages(formData);
   
         console.log("Upload response:", uploadResponse.data);
   
@@ -117,16 +107,7 @@ const ManageProducts = () => {
       console.log("Updated Product:", updatedProduct);
   
       // 🔹 Send updated product data to backend
-      const response = await axios.put(
-        `http://localhost:5000/api/products/${editingProduct._id}`,
-        updatedProduct,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await updateProduct(editingProduct._id, updatedProduct);
   
       setProducts(
         products.map((product) =>
@@ -389,13 +370,13 @@ const ManageProducts = () => {
                               >
                                 <Edit2 className="h-5 w-5" />
                               </button>
-                              <button
+                              {/* <button
                                 onClick={() => setConfirmDelete(product._id)}
                                 className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition duration-150"
                                 title="Delete Product"
                               >
                                 <Trash2 className="h-5 w-5" />
-                              </button>
+                              </button> */}
                               {/* Button to Open Modal with specific product ID */}
                               <button
                                 onClick={() => handlePreviewClick(product._id)}

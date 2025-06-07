@@ -1,30 +1,26 @@
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { logoutAPI} from "../../api";
 
 const Logout = ({ className, onClick }) => {
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    try {
-      const token = localStorage.getItem("authToken");
+const handleLogout = async () => {
+  try {
+    // ✅ Call the backend using centralized API function
+    await logoutAPI();
 
-      // ✅ Call the backend to invalidate the token (optional)
-      await axios.post("http://localhost:5000/api/users/logout", {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+    // ✅ Clear session and local storage
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("userRole");
+    sessionStorage.setItem("hadSession", "false");
 
-      // ✅ Clear session storage and local storage
-      localStorage.removeItem("authToken");
-      localStorage.removeItem("userRole");
-      sessionStorage.setItem("hadSession", "false");
-
-      // ✅ Redirect to home page
-      navigate("/");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
-
+    // ✅ Redirect
+    navigate("/");
+  } catch (error) {
+    console.error("Logout failed:", error);
+  }
+};
   return (
     <button
       onClick={() => {

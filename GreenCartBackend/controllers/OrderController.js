@@ -250,7 +250,9 @@ exports.deleteOrder = async (req, res) => {
 
 exports.getOrders = async (req,res) => {
   try{
-    const orders = await Order.find();
+    const orders = await Order.find() .populate({
+      path: "orderItems.product", // populate product inside each orderItem
+    });
     if(!orders) return res.status(404).json({ message:"Order not found"});
     res.status(200).json(orders);
   }
@@ -285,5 +287,34 @@ exports.OrderTracking = async (req, res) => {
   } catch (error) {
     console.error("Error fetching order tracking:", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+exports.getAllOrdersWithDetails = async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate("user", "-password") // Exclude password field for security
+      .populate("orderItems.product")
+      .populate("OrderDetail");
+
+    // Fetch address details for each order
+    const enrichedOrders = await Promise.all(
+      orders.map(async (order) => {
+        let address = null;
+        if (order?.OrderDetail?.deliveryAddress) {
+          address = await Address.findById(order.OrderDetail.deliveryAddress);
+        }
+
+        return {
+          ...order.toObject(),
+          deliveryAddress: address,
+        };
+      })
+    );
+
+    res.status(200).json(enrichedOrders);
+  } catch (error) {
+    console.error("Error fetching orders with details:", error);
+    res.status(500).json({ error: "Failed to fetch orders" });
   }
 };

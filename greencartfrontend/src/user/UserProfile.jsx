@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { User, Mail, Phone, MapPin, Camera, Edit2, Save, X, Calendar, Instagram, Facebook, Twitter, Globe, Gift, Lock, Shield, Bell, Package } from 'lucide-react';
 import Logout from '../components/authentication/Logout';
-import { fetchOrderByUser, updateOrderStatus } from '../api';
+import { fetchOrderByUser, getUserdetails, updateOrderStatus, updateUser } from '../api';
 import Notification from "../components/ui/notification/Notification";
 import axios from 'axios';
 import BackButton from '../components/ui/BackButton';
@@ -44,12 +44,7 @@ const UserProfile = () => {
     try {
       const token = localStorage.getItem("authToken");
       
-      const res = await axios.get(`http://localhost:5000/api/users/getuserdetails/`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const res = await getUserdetails();
       
       const { user, userType, userTypeData } = res.data;
       setUserData(user);
@@ -201,12 +196,7 @@ const UserProfile = () => {
         updateData.Image = imagePreview;
       }
       
-      await axios.put(`http://localhost:5000/api/users/updateuser/`, updateData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      await updateUser(updateData);
 
       setNotification({ message: "Profile updated successfully!", type: "success" });
       setIsEditing(false);

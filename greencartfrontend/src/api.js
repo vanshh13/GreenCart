@@ -64,15 +64,25 @@ export const loginUser = (data) => API.post('/users/login', data);
 export const socialLogin = (data) => API.post('/users/oauth/', data);
 
 // Product APIs
-export const fetchProducts = () => API.get('/products');
 export const fetchProductsbyid = (id, data, token) => 
   API.get(`/products/${id}`, data, {
     headers: { Authorization: `Bearer ${token}` },
   });
-export const updateProduct = (id, data, token) => 
-  API.put(`/products/${id}`, data, {
-    headers: { Authorization: `Bearer ${token}` },
+
+  export const fetchAllProductsAPI = () => {
+  return API.get("/products");
+};
+
+
+  export const updateProduct = (productId, updatedProduct) => {
+  return API.put(`/products/${productId}`, updatedProduct, {
+    headers: {
+      ...authHeaders().headers,
+      "Content-Type": "application/json",
+    },
   });
+};
+
 export const deleteProduct = (id, token) => 
   API.delete(`/products/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -157,4 +167,233 @@ export const orderTracking = (token, orderId) => {
   return API.get(`/orders/tracking/${orderId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
+};
+
+export const fetchNotifications = (token) => {
+  return API.get("/notifications", authHeaders());
+};
+
+export const fetchAdminStats = (token) => {
+  return API.get("/admins/stats", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+export const fetchVisitorStats = (token, period) => {
+  return API.get(`/admins/statistics/visitors/${period}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+};
+
+export const fetchOverviewStats = (token, period = "monthly") => {
+  return API.get(`/admins/statistics/overview/${period}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const fetchTopProductStats = (token) => {
+  return API.get("/admins/statistics/products/top", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+};
+
+export const fetchSalesByPayment = (token) => {
+  return API.get("/admins/statistics/sales/payment", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+};
+
+// api/adminAnalytics
+export const fetchSalesData = (token, timeframe) => {
+  return API.get(`/admins/analytics/sales/${timeframe}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+};
+
+export const fetchProductAnalytics = (token) => {
+  return API.get(`/admins/analytics/products`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+};
+
+export const fetchUserAnalytics = (token) => {
+  return API.get(`/admins/analytics/users`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+};
+
+const authHeaders = () => ({
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+    "Content-Type": "application/json",
+  },
+});
+
+// Get current logged-in user
+export const fetchCurrentUser = () => {
+  return API.get("/users/current", authHeaders());
+};
+
+// Get all users
+export const fetchAllUsers = () => {
+  return API.get("/users", authHeaders());
+};
+
+// Get role for a specific admin user
+export const fetchAdminRoleById = (userId) => {
+  return API.get(`/admins/role/${userId}`);
+};
+
+// Add new user (Customer/Admin)
+export const addNewUser = (data) => {
+  return API.post("/users", data, authHeaders());
+};
+
+// Delete a user
+export const deleteUserById = (userId) => {
+  return API.delete(`/users/${userId}`, authHeaders());
+};
+
+// Update admin role
+export const updateAdminRoleById = (adminId, role) => {
+  return API.put(`/admins/${adminId}/role`, { role }, authHeaders());
+};
+
+export const markNotificationAsRead = (id) => {
+  return API.put(`/notifications/${id}/read`);
+};
+
+export const markAllNotificationsAsRead = () => {
+  return API.put(`/notifications/mark-all-read`);
+};
+
+export const clearAllNotificationsAPI = () => {
+  return API.delete(`/notifications/clear-all`);
+};
+
+export const fetchNotificationsAPI = () => {
+  return API.get("/notifications", authHeaders());
+};
+
+export const createBlog = (formData) => {
+  return API.post("/blogs", formData, {
+    ...authHeaders(),
+    headers: {
+      ...authHeaders().headers,
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
+export const getAllBlogs = () => {
+return API.get("/blogs");
+};
+
+export const deleteBlogById = (id) => {
+return API.delete(`/blogs/${id}`, authHeaders());
+};
+
+// Upload new images
+export const uploadImages = (formData) => {
+  return API.post(`/upload`, formData, {
+    headers: {
+      ...authHeaders(),
+      "Content-Type": "multipart/form-data"
+    }
+  });
+};
+
+
+
+// Update blog
+export const updateBlog = (id, blogData) => {
+  return API.put(`/blogs/${id}`, blogData, authHeaders());
+};
+
+export const getAllBlogsFrontend = () => {
+  return API.get("/blogs/all");
+};
+
+export const getOrderDetailsByOrderId = (orderId) => {
+  return API.get(`/order-details/order/${orderId}`);
+};
+
+export const getAllOrders = () => API.get("/orders");
+export const getUserById = (id) => API.get(`/users/${id}`);
+// export const getOrderDetailsByOrderId = (orderId) => API.get(`/order-details/order/${orderId}`);
+export const getAddressById = (id) => API.get(`/addresses/${id}`);
+export const getProductById = (id) => API.get(`/products/${id}`);
+
+export const createRazorpayOrder = (orderData) =>
+  API.post("/create-order", orderData);
+
+export const verifyRazorpayPayment = (verifyData) =>
+  API.post("/verify-payment", verifyData);
+
+export const getPaymentDetails = (paymentId) =>
+  API.get(`/payment/${paymentId}`);
+
+// Modify these API endpoints to support batched requests
+export const getAllOrdersWithDetails = () => API.get("/orders/with-details");
+// Alternatively, create a new endpoint that returns all orders with their details in a single request
+
+export const logoutAPI = () => {
+  return API.post("/users/logout", {}, authHeaders());
+};
+
+export const addProductAPI = (formData) => {
+  return API.post("/products", formData, authHeaders());
+};
+
+export const fetchWishlistAPI = (userId) => {
+  return API.get(`/wishlist/${userId}`, authHeaders());
+};
+
+export const fetchProductsByCategoryAPI = (category) => {
+  return API.get(`/products/category/${encodeURIComponent(category)}`);
+};
+
+export const fetchWishlistAddAPI = () => {
+  return API.get("/wishlist/add", authHeaders());
+};
+
+
+export const addToWishlistAPI = (productId) => {
+  return API.post("/wishlist/add", { productId }, authHeaders());
+};
+
+export const removeFromWishlistAPI = (productId) => {
+  return API.delete(`/wishlist/remove/${productId}`, authHeaders());
+};
+
+export const getCategories = () => {
+  return API.get(`/categories`)
+};
+
+export const getUserdetails = () => {
+  return API.get(`/users/getuserdetails`, authHeaders());
+};
+
+export const updateUser = (updateData) => {
+  return API.put(`/users/updateuser`, {updateData} , authHeaders());
 };

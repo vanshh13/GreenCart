@@ -13,7 +13,7 @@ import {
   Star, RefreshCw, FileText, Calendar, Download,
   IndianRupee
 } from "lucide-react";
-
+import { fetchOverviewStats, fetchVisitorStats, fetchTopProductStats, fetchSalesByPayment } from "../api";
 const AdminStatistics = () => {
   const [period, setPeriod] = useState("last30days");
   const [isLoading, setIsLoading] = useState(true);
@@ -28,16 +28,10 @@ const AdminStatistics = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Simulating API calls - replace with your actual endpoints
-        // const overviewRes = await axios.get(`http://localhost:5000/api/admin/statistics/overview?period=${period}`);
-        // const visitorRes = await axios.get(`http://localhost:5000/api/statistics/visitors?period=${period}`);
-        // const productRes = await axios.get(`http://localhost:5000/api/statistics/products/top`);
-        // const ratingRes = await axios.get(`http://localhost:5000/api/statistics/ratings`);
-        // const paymentRes = await axios.get(`http://localhost:5000/api/statistics/sales/payment`);
-        fetchOverviewStats("monthly");
-        fetchVisitorStats();
-        fetchProductStats();
-        fetchSalesByPayment();
+        getOverviewStats("monthly");
+        getVisitorStats();
+        getProductStats();
+        getSalesByPayment();
         // Mock data for demonstration
         const mockOverviewStats = {
           totalSales: 138570,
@@ -82,12 +76,7 @@ const AdminStatistics = () => {
           { name: "Bank Transfer", value: 10, color: "#FFBB28" },
           { name: "Cash on Delivery", value: 5, color: "#FF8042" },
         ];
-
-        // setOverviewStats(mockOverviewStats);
-        // setVisitorStats(mockVisitorStats);
-        // setProductStats(mockProductStats);
         setRatingStats(mockRatingStats);
-        // setSalesByPayment(mockSalesByPayment);
       } catch (error) {
         console.error("Error fetching statistics data:", error);
       } finally {
@@ -98,77 +87,57 @@ const AdminStatistics = () => {
     fetchData();
   }, [period]);
 
-  const fetchVisitorStats = async () => {
+  const getVisitorStats = async () => {
     try {
       const token = localStorage.getItem("authToken");
-      const res = await axios.get(`http://localhost:5000/api/admins/statistics/visitors/${period}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const res = await fetchVisitorStats(token, period);
       console.log("Visitor Stats:", res.data.stats);
       setVisitorStats(res.data.stats);
-      setIsLoading(false);
     } catch (error) {
       console.error("Error fetching visitor statistics:", error);
+    } finally {
       setIsLoading(false);
     }
   };
-
-  const fetchOverviewStats = async (period = "monthly") => {
+  
+  const getOverviewStats = async (period = "monthly") => {
     try {
-      const token = localStorage.getItem("authToken"); // Assuming token is stored in localStorage
-      const res = await axios.get(
-        `http://localhost:5000/api/admins/statistics/overview/${period}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`, 
-          },
-        }
-      );
+      const token = localStorage.getItem("authToken");
+      const res = await fetchOverviewStats(token, period);
       console.log("Overview Stats:", res.data);
       setOverviewStats(res.data);
     } catch (error) {
       console.error("Error fetching overview statistics:", error);
     }
   };
+  
    
-  const fetchProductStats = async () => {
+  const getProductStats = async () => {
     try {
       const token = localStorage.getItem("authToken");
-      const res = await axios.get("http://localhost:5000/api/admins/statistics/products/top", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const res = await fetchTopProductStats(token);
       console.log("Product Stats:", res.data.topProducts);
       setProductStats(res.data.topProducts);
-      setIsLoading(false);
     } catch (error) {
       console.error("Error fetching product statistics:", error);
+    } finally {
       setIsLoading(false);
     }
   };
-
-  const fetchSalesByPayment = async () => {
+  
+  const getSalesByPayment = async () => {
     try {
       const token = localStorage.getItem("authToken");
-      const res = await axios.get("http://localhost:5000/api/admins/statistics/sales/payment", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const res = await fetchSalesByPayment(token);
       console.log("Sales by Payment Method:", res.data.salesByPayment);
       setSalesByPayment(res.data.salesByPayment);
-      setIsLoading(false);
     } catch (error) {
       console.error("Error fetching sales by payment method:", error);
+    } finally {
       setIsLoading(false);
     }
   };
+  
   const downloadReport = () => {
     // Implementation for downloading reports
     alert("Report download functionality will be implemented here");
@@ -246,10 +215,6 @@ const AdminStatistics = () => {
                   </div>
                 </div>
                 <p className="text-2xl font-bold mb-2">₹{overviewStats.totalSales?.toLocaleString()}</p>
-                {/* <div className="flex items-center text-sm">
-                  {renderChangeIndicator(overviewStats.salesChange)}
-                  <span className="text-gray-500 ml-2">vs. previous period</span>
-                </div> */}
               </motion.div>
               
               <motion.div
@@ -264,10 +229,6 @@ const AdminStatistics = () => {
                   </div>
                 </div>
                 <p className="text-2xl font-bold mb-2">{overviewStats.totalOrders?.toLocaleString()}</p>
-                {/* <div className="flex items-center text-sm">
-                  {renderChangeIndicator(overviewStats.ordersChange)}
-                  <span className="text-gray-500 ml-2">vs. previous period</span>
-                </div> */}
               </motion.div>
               
               <motion.div
@@ -276,16 +237,12 @@ const AdminStatistics = () => {
                 className="bg-white rounded-lg shadow-md p-6"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium text-gray-700">Total Customers</h3>
+                  <h3 className="text-lg font-medium text-gray-700">Total Users</h3>
                   <div className="p-2 bg-purple-100 rounded-full">
                     <Users size={20} className="text-purple-600" />
                   </div>
                 </div>
                 <p className="text-2xl font-bold mb-2">{overviewStats.totalCustomers?.toLocaleString()}</p>
-                {/* <div className="flex items-center text-sm">
-                  {renderChangeIndicator(overviewStats.customersChange)}
-                  <span className="text-gray-500 ml-2">vs. previous period</span>
-                </div> */}
               </motion.div>
               
               <motion.div
@@ -340,34 +297,12 @@ const AdminStatistics = () => {
                   <div className="flex justify-between items-center">
                     <CardTitle className="text-xl text-gray-800">Sales by Payment Method</CardTitle>
                     <div className="flex items-center">
-                      {/* <Star size={20} className="text-yellow-400 mr-1" /> */}
-                      {/* <span className="text-lg font-medium">4.4</span> */}
-                      {/* <span className="text-sm text-gray-500 ml-1">/ 5</span> */}
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-4">
-                  {/* <div className="space-y-4 mb-6">
-                    {ratingStats.map((item) => (
-                      <div key={item.rating} className="flex items-center">
-                        <span className="text-sm text-gray-600 w-16">{item.rating}</span>
-                        <div className="flex-1 mx-4">
-                          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-yellow-400 rounded-full" 
-                              style={{ width: `${item.percentage}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                        <span className="text-sm text-gray-600 w-12">{item.percentage}%</span>
-                        <span className="text-sm text-gray-400 w-12">({item.count})</span>
-                      </div>
-                    ))}
-                  </div> */}
-                  
+                <CardContent className="pt-9">
                   {/* Payment Methods */}
-                  <div>
-                    {/* <h3 className="font-medium text-gray-700 mb-3">Sales by Payment Method</h3> */}
+                  <div className="pt-0">
                     <div className="h-48">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>

@@ -4,6 +4,7 @@ import { Upload, X, Eye, Check, Loader2 } from "lucide-react";
 import AdminNavbar from "../components/AdminNavigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { createBlog } from "../api";
 const AddBlog = () => {
   const [blog, setBlog] = useState({
     title: "",
@@ -73,14 +74,11 @@ const AddBlog = () => {
     const formData = new FormData();
     Object.entries(blog).forEach(([key, value]) => {
       if (key === "Images") {
-        console.log("Uploading images:", value); // 🔍 Debugging Log
         value.forEach((image) => formData.append("images", image.file));
       } else {
         formData.append(key, value);
       }
     });
-  
-    console.log("Final FormData:", [...formData.entries()]); // 🔍 Check if images are duplicated
   
     try {
       const token = localStorage.getItem("authToken");
@@ -93,19 +91,14 @@ const AddBlog = () => {
       const userId = JSON.parse(atob(token.split(".")[1])).id;
       formData.append("userId", userId);
   
-      const response = await axios.post("http://localhost:5000/api/blogs", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await createBlog(formData);
   
       setNewBlogId(response.data._id);
       setSubmitStatus("success");
       setIsLoading(false);
       navigate(`/admin/manage-blog`);
     } catch (error) {
-      console.error("🚨 Error:", error.response?.data);
+      console.error("Error creating blog:", error.response?.data || error.message);
       setSubmitStatus("error");
       setIsLoading(false);
     }

@@ -2,16 +2,25 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
+import { getOrderDetailsByOrderId } from "../api";
 
 const OrderDetailPage = () => {
   const { orderId } = useParams();
   const [orderDetail, setOrderDetail] = useState(null);
 
   useEffect(() => {
-    axios.get(`http://localhost:5000/api/order-details/order/${orderId}`)
-      .then(response => setOrderDetail(response.data))
-      .catch(error => console.error("Error fetching order details:", error));
+    const fetchOrderDetails = async () => {
+      try {
+        const response = await getOrderDetailsByOrderId(orderId);
+        setOrderDetail(response.data);
+      } catch (error) {
+        console.error("Error fetching order details:", error);
+      }
+    };
+  
+    fetchOrderDetails();
   }, [orderId]);
+  
 
   if (!orderDetail) return <p>Loading order details...</p>;
 

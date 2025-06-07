@@ -196,9 +196,14 @@ exports.stats  = async (req, res) => {
     const totalOrders = await Order.countDocuments();
     const totalProducts = await Product.countDocuments();
     const totalSales = await Order.aggregate([
-      { $match: { orderStatus: { $ne: "cancelled" } } }, // Exclude cancelled
-      { $group: { _id: null, total: { $sum: "$totalPrice" } } }
+      { 
+        $match: { orderStatus: "delivered" } // Only delivered orders 
+      },
+      { 
+        $group: { _id: null, total: { $sum: "$totalPrice" } } 
+      }
     ]);
+    
 console.log(totalUsers, totalOrders, totalProducts, totalSales);
     res.json({
       totalUsers,
@@ -284,27 +289,42 @@ exports.getOverviewStats = async (req, res) => {
     } else {
       startDate = new Date("1970-01-01"); // Default: All-time stats
     }
-
+    console.log("startDate",startDate);
     // 🟢 Total Sales (Sum of all totalPrice)
     const totalSales = await Order.aggregate([
-      { $match: { orderDate: { $gte: startDate } } },
-      { $group: { _id: null, total: { $sum: "$totalPrice" } } }
+      {
+        $match: {
+          orderDate: { $gte: startDate },
+          orderStatus: "delivered" // Only delivered orders
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$totalPrice" }
+        }
+      }
     ]);
-    
-    // 🟢 Total Orders (Count of all orders)
-    const totalOrders = await Order.countDocuments({ orderDate: { $gte: startDate } });
 
-    // 🟢 Total Customers (Unique customers count)
+    
+    //  Total Orders (Count of all orders)
+    const totalOrders = await Order.countDocuments({ 
+      orderDate: { $gte: startDate },
+      orderStatus: { $ne: "cancelled" } // $ne = not equal to "Cancelled"
+    });
+    
+
+    //  Total Customers (Unique customers count)
     const totalCustomers = await Customer.countDocuments();
 
-    // 🟢 Average Order Value (totalSales / totalOrders)
+    //  Average Order Value (totalSales / totalOrders)
     const avgOrderValue = totalOrders > 0 ? (totalSales[0]?.total || 0) / totalOrders : 0;
 
-    // 🟢 Conversion Rate (Percentage of 'delivered' orders)
+    //  Conversion Rate (Percentage of 'delivered' orders)
     const totalDeliveredOrders = await Order.countDocuments({ orderStatus: "delivered", orderDate: { $gte: startDate } });
     const conversionRate = totalOrders > 0 ? (totalDeliveredOrders / totalOrders) * 100 : 0;
 
-    // 🟢 Calculate Changes Compared to Previous Period
+    //  Calculate Changes Compared to Previous Period
     const prevStartDate = new Date(startDate);
     if (period === "weekly") prevStartDate.setDate(prevStartDate.getDate() - 7);
     else if (period === "monthly") prevStartDate.setMonth(prevStartDate.getMonth() - 1);
@@ -384,6 +404,7 @@ exports.getTopSellingProducts = async (req, res) => {
   try {
     // Aggregate product sales from orders
     const topProducts = await Order.aggregate([
+      { $match: { orderStatus: { $ne: 'cancelled' } } }, // Exclude orders with 'cancelled' status
       { $unwind: "$orderItems" }, // Flatten order items
       {
         $group: {
@@ -395,6 +416,7 @@ exports.getTopSellingProducts = async (req, res) => {
       { $sort: { totalSales: -1 } }, // Sort by sales (highest first)
       { $limit: 5 }, // Get top 5 products
     ]);
+    
 
     // Populate product names
     const products = await Product.find({ _id: { $in: topProducts.map((p) => p._id) } });
@@ -449,7 +471,7 @@ const getColorForPaymentMethod = (method) => {
   };
   return colors[method] || "#AAAAAA"; // Default color if not found
 };
-
+// analysis
 exports.getProductRatings = async (req, res) => {
   try {
     const ratings = await Product.aggregate([
@@ -523,7 +545,7 @@ exports.getProductAnalytics = async (req, res) => {
 
     // 🟢 Aggregate product sales from Order collection
     const productStats = await Order.aggregate([
-      { $match: { orderDate: { $gte: startDate } } },
+      { $match: { orderDate: { $gte: startDate }, orderStatus: { $ne: 'Cancelled' } } }, // Exclude cancelled orders
       { $unwind: "$orderItems" }, // Split array of items into separate documents
       {
         $group: {
@@ -533,8 +555,9 @@ exports.getProductAnalytics = async (req, res) => {
         }
       },
       { $sort: { sales: -1 } }, // Sort by highest sales
-      { $limit: 10 } // ✅ Limit to top 10 products
+      { $limit: 10 } // Limit to top 10 products
     ]);
+    
 
     // 🟢 Fetch product names
     const productIds = productStats.map((item) => item._id);

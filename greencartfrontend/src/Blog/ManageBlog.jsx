@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Pencil, Trash, PlusCircle, Eye, Search, Filter, ArrowUp, ArrowDown, Loader2, X, Check, Save, Image, Upload } from "lucide-react";
 import AdminNavbar from "../components/AdminNavigation";
 import Notification from '../components/ui/notification/Notification';
+import { getAllBlogs, deleteBlogById } from "../api";
+import { updateBlog,uploadImages } from "../api";
 
 const ManageBlog = () => {
   const [blogs, setBlogs] = useState([]);
@@ -37,10 +39,10 @@ const ManageBlog = () => {
   const fetchBlogs = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:5000/api/blogs");
+      const response = await getAllBlogs();
       let sortedBlogs = [...response.data];
-      
-      // Sort blogs based on current sort field and direction
+  
+      // Sort blogs
       sortedBlogs.sort((a, b) => {
         if (sortField === "date") {
           const dateA = new Date(a.createdAt || a.date);
@@ -53,7 +55,7 @@ const ManageBlog = () => {
         }
         return 0;
       });
-      
+  
       setBlogs(sortedBlogs);
     } catch (err) {
       console.error("Error fetching blogs:", err);
@@ -62,40 +64,26 @@ const ManageBlog = () => {
       setLoading(false);
     }
   };
-
+  
   const deleteBlog = async (id) => {
     if (!window.confirm("Are you sure you want to delete this blog?")) return;
-    
+  
     setIsDeleting(true);
     setDeleteStatus({ id, status: "pending" });
-    
+  
     try {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        alert("Authentication required. Please log in.");
-        setIsDeleting(false);
-        return;
-      }
-      
-      await axios.delete(`http://localhost:5000/api/blogs/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
+      await deleteBlogById(id);
       setDeleteStatus({ id, status: "success" });
-      
-      // Delay to show success animation
+  
       setTimeout(() => {
-        setBlogs(blogs.filter((blog) => blog._id !== id));
+        setBlogs((prevBlogs) => prevBlogs.filter((blog) => blog._id !== id));
         setIsDeleting(false);
         setDeleteStatus({ id: null, status: null });
       }, 1000);
     } catch (error) {
       console.error("Delete error:", error);
       setDeleteStatus({ id, status: "error" });
-      
-      // Delay to show error animation
+  
       setTimeout(() => {
         setIsDeleting(false);
         setDeleteStatus({ id: null, status: null });
@@ -171,61 +159,32 @@ const ManageBlog = () => {
       let uploadedImages = [];
       const formData = new FormData();
   
-      // 🔹 Identify New Images (Only files should be uploaded)
       const newImages = editBlog.images.filter((image) => image.file);
-      
       newImages.forEach((image) => {
         formData.append("images", image.file);
       });
   
-      // 🔹 Upload only if there are new images
       if (newImages.length > 0) {
-        const uploadResponse = await axios.post(
-          "http://localhost:5000/api/upload",  
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
-  
-        console.log("Upload response:", uploadResponse.data);
-  
-        // ✅ Extract the correct array of URLs
+        const uploadResponse = await uploadImages(formData);
         uploadedImages = uploadResponse.data.images.map(img => img.imageUrl);
       }
   
-      // 🔹 Merge existing images with new uploaded images
       const updatedBlog = {
         ...editBlog,
         images: [
-          ...uploadedImages, // ✅ Newly uploaded images
-          ...editBlog.images.filter(img => typeof img === "string"), // ✅ Keep existing Cloudinary URLs
+          ...uploadedImages,
+          ...editBlog.images.filter(img => typeof img === "string"),
         ],
       };
   
       console.log("Updated Blog:", updatedBlog);
   
-      // 🔹 Send updated blog data to backend
-      const response = await axios.put(
-        `http://localhost:5000/api/blogs/${editBlog._id}`,
-        updatedBlog,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await updateBlog(editBlog._id, updatedBlog);
   
       setBlogs(blogs.map(blog => blog._id === editBlog._id ? response.data.blog : blog));
-  
       setEditBlog(null);
       setSelectedImage(null);
       setShowPreviewAfterUpdate(true);
-      console.log("Blog updated successfully:", response.data);
       showNotification("Blog updated successfully!", "success");
     } catch (error) {
       console.error("Error updating blog:", error);
@@ -464,7 +423,8 @@ const ManageBlog = () => {
 
                 {/* Blog Meta Info */}
                 <div className="text-sm text-gray-500 mb-4">
-                  Published: {previewBlog.createdAt || "Unknown Date"}
+                  Published:
+                  {formatDate(previewBlog.createdAt || previewBlog.datePublished)|| "Unknown Date"} 
                 </div>
 
                 {/* Featured Image Display */}

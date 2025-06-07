@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { addProductToCart } from "../api";
+import { addProductToCart, addToWishlistAPI, fetchAllProductsAPI, fetchProductsByCategoryAPI, fetchWishlistAPI, getCategories, removeFromWishlistAPI } from "../api";
 import { ShoppingCart, Package, Loader2, Heart, Search, Filter, SlidersHorizontal, ArrowLeft, X, AlertCircle, CheckCircle, Info } from "lucide-react";
 import axios from "axios";
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -94,9 +94,7 @@ const ProductCard = ({ product, addToCart, showNotification }) => {
       if (!token) return;
 
       try {
-        const response = await axios.get("http://localhost:5000/api/wishlist/add", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+       const response = await fetchWishlistAPI();
 
         const wishlistItems = response.data || [];
         setIsWishlisted(wishlistItems.some((item) => item.product._id === product._id));
@@ -119,17 +117,11 @@ const ProductCard = ({ product, addToCart, showNotification }) => {
 
     try {
       if (isWishlisted) {
-        await axios.delete(`http://localhost:5000/api/wishlist/remove/${product._id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await removeFromWishlistAPI(product._id);
         showNotification("Removed from wishlist", "success");
         setIsWishlisted(false);
       } else {
-        await axios.post(
-          "http://localhost:5000/api/wishlist/add",
-          { productId: product._id },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await addToWishlistAPI(product._id);
         showNotification("Added to wishlist", "success");
         setIsWishlisted(true);
       }
@@ -311,7 +303,7 @@ const ProductGrid = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/categories");
+        const response = await getCategories();
         // Add "All" option to categories
         setCategories(["All", ...response.data.map(cat => cat.name)]);
       } catch (error) {
@@ -334,14 +326,12 @@ const ProductGrid = () => {
         let response;
         if (category) {
           // If we're on a category page, fetch only that category's products
-          response = await axios.get(
-            `http://localhost:5000/api/products/category/${encodeURIComponent(category)}`
-          );
+          response = await fetchProductsByCategoryAPI(category);
           // Also set the selected category for the filter UI
           setSelectedCategory(category);
         } else {
           // Otherwise fetch all products
-          response = await axios.get("http://localhost:5000/api/products");
+          response = await fetchAllProductsAPI();
         }
         
         setProducts(response.data);

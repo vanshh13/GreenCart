@@ -12,6 +12,7 @@ import {
   Users, RefreshCw, Calendar, Download,
   IndianRupee
 } from "lucide-react";
+import {fetchSalesData, fetchProductAnalytics, fetchUserAnalytics} from "../api";
 
 const AnalysisDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -31,49 +32,25 @@ const AnalysisDashboard = () => {
   const fetchAnalysisData = async () => {
     setIsRefreshing(true);
     setApiError(null);
-    
+  
     try {
       const token = localStorage.getItem("authToken");
-      if (!token) {
-        throw new Error("Authentication token not found. Please log in again.");
-      }
-
-      // Log request details for debugging
+      if (!token) throw new Error("Authentication token not found. Please log in again.");
+  
       console.log(`Fetching sales data for timeframe: ${timeframe}`);
-      
-      // Fetch sales data
-      const salesRes = await axios.get(`http://localhost:5000/api/admins/analytics/sales/${timeframe}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+  
+      const [salesRes, productRes, userRes] = await Promise.all([
+        fetchSalesData(token, timeframe),
+        fetchProductAnalytics(token),
+        fetchUserAnalytics(token),
+      ]);
+  
       console.log("Sales API Response:", salesRes.data);
-      
-      // Fetch product data
-      const productRes = await axios.get(`http://localhost:5000/api/admins/analytics/products`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
       console.log("Product API Response:", productRes.data);
-      
-      // Fetch user data
-      const userRes = await axios.get(`http://localhost:5000/api/admins/analytics/users`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
       console.log("User API Response:", userRes.data);
-      
-      if (!salesRes.data || !Array.isArray(salesRes.data)) {
-        throw new Error("Invalid sales data received from API");
-      }
-      
-      if (salesRes.data.length === 0) {
-        setSalesData([]); // Still set empty sales data
+  
+      if (!Array.isArray(salesRes.data) || salesRes.data.length === 0) {
+        setSalesData([]);
         setPerformanceMetrics({
           revenue: { value: 0 },
           orders: { value: 0 },
@@ -81,52 +58,29 @@ const AnalysisDashboard = () => {
           users: { value: userRes.data?.total || 0 },
         });
         setApiError("No sales data available for the selected timeframe.");
-        return; // Skip the rest of the flow
+        return;
       }
-      
-      
-      if (!productRes.data || !Array.isArray(productRes.data) || productRes.data.length === 0) {
+  
+      if (!Array.isArray(productRes.data) || productRes.data.length === 0) {
         throw new Error("Invalid or empty product data received from API");
       }
-      
-      if (!userRes.data || typeof userRes.data !== 'object') {
+  
+      if (!userRes.data || typeof userRes.data !== "object") {
         throw new Error("Invalid user statistics data received from API");
       }
-      
-      // Set data from API responses
+  
       setSalesData(salesRes.data);
       setProductData(productRes.data);
       setUserStats(userRes.data);
-      
-      // Calculate performance metrics from API data
+  
       calculatePerformanceMetrics(salesRes.data, userRes.data);
-      
     } catch (error) {
-      // Detailed error handling
       console.error("Error fetching analysis data:", error);
-      
-      // Set specific error message for user
       setApiError(
-        error.response 
+        error.response
           ? `API Error (${error.response.status}): ${error.response.data?.message || error.message}`
           : `Network Error: ${error.message}. Please check if your API server is running.`
       );
-      
-      // Uncomment the following ONLY for debugging - remove for production
-      // alert(`API Error: ${error.message}. Check console for details.`);
-      
-      // Important: DON'T use mock data in production
-      // For development, you can conditionally use mock data based on a dev flag
-      // const isDevelopment = process.env.NODE_ENV === 'development';
-      
-      // if (isDevelopment) {
-      //   // Use mock data only in development mode
-      //   const mockSalesData = getMockSalesData();
-      //   setSalesData(mockSalesData);
-      //   setProductData(getMockProductData());
-      //   setUserStats({ total: 1250, new: 127, returning: 865 });
-      //   calculatePerformanceMetrics(mockSalesData, { total: 1250, new: 127, returning: 865 });
-      // }
     } finally {
       setLoading(false);
       setIsRefreshing(false);

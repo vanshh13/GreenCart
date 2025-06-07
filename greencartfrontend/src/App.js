@@ -75,7 +75,15 @@ const ProtectedRoute = ({ element, allowedRoles }) => {
 
   if (!allowedRoles.includes(userRole)) {
     console.error(`Access denied: User role '${userRole}' not allowed.`);
-    return <Navigate to="/authpage" />;
+    if (userRole === "Customer") {
+      return <Navigate to="/authpage" />;
+    }
+    if (userRole === "Manager") {
+      return <Navigate to="/admin-dashboard" />;
+    }
+    if (userRole === "Admin") {
+      return <Navigate to="/admin-dashboard" />;
+    }
   }
 
   return element;
@@ -164,20 +172,20 @@ const App = () => {
             <Route path="/user/wishlist" element={<ProtectedRoute element={<Wishlist />} allowedRoles={["Customer"]} />} />
             <Route path="/ordertracking/:orderId" element={<ProtectedRoute element={<OrderTracking />} allowedRoles={["Customer"]} />} />
 
-            <Route path="/admin-dashboard" element={<ProtectedRoute element={<AdminDashboard />} allowedRoles={["Admin"]} />} />
+            <Route path="/admin-dashboard" element={<ProtectedRoute element={<AdminDashboard />} allowedRoles={["Admin", "Manager"]} />} />
             <Route path="/admin/add-product" element={<ProtectedRoute element={<AddProduct />} allowedRoles={["Admin"]} />} />
-            <Route path="/admin/product/:productId" element={<ProtectedRoute element={<ProductCatalog />} allowedRoles={["Admin"]} />} />
+            <Route path="/admin/product/:productId" element={<ProtectedRoute element={<ProductCatalog />} allowedRoles={["Admin","Manager"]} />} />
             <Route path="admin/manage-product" element={<ProtectedRoute element={<ManageProducts />} allowedRoles={["Admin"]} />} />
             <Route path="/admin/notification-page" element={<ProtectedRoute element={<NotificationsPage />} allowedRoles={["Admin"]} />} />
             <Route path="/admin/users/add" element={<ProtectedRoute element={<AddAdmin />} allowedRoles={["Admin"]} />} />
             <Route path="/admin/users" element={<ProtectedRoute element={<ManageAdmins />} allowedRoles={["Admin"]} />} />
             <Route path="/admin/orders" element={<ProtectedRoute element={<OrderManagementDashboard />} allowedRoles={["Admin"]} />} />
             <Route path="/orderdetails/:orderId" element={<OrderDetailPage />} />
-            <Route path="/admin/add-blog" element={<ProtectedRoute element={<AddBlog />} allowedRoles={["Admin"]} />} />
-            <Route path="/admin/manage-blog" element={<ProtectedRoute element={<ManageBlog />} allowedRoles={["Admin"]} />} />
+            <Route path="/admin/add-blog" element={<ProtectedRoute element={<AddBlog />} allowedRoles={["Admin","Manager"]} />} />
+            <Route path="/admin/manage-blog" element={<ProtectedRoute element={<ManageBlog />} allowedRoles={["Admin","Manager"]} />} />
             <Route path="/admin/analytics" element={<ProtectedRoute element={<AnalysisDashboard />} allowedRoles={["Admin"]} />} />
             <Route path="/admin/statistics" element={<ProtectedRoute element={<AdminStatistics />} allowedRoles={["Admin"]} />} />
-            <Route path="/admin/user/profile" element={<ProtectedRoute element={<UserProfile />} allowedRoles={["Admin"]} />} />
+            <Route path="/admin/user/profile" element={<ProtectedRoute element={<UserProfile />} allowedRoles={["Admin","Manager"]} />} />
             <Route path="/logout" element={<ProtectedRoute element={<Logout />} allowedRoles={["Admin","Customer"]} />} />
             <Route path="*" element={<Navigate to="/" />} />
             <Route path="/productsgrid" element={<ProtectedRoute element={<ProductsGrid />} allowedRoles={["Customer"]} />} />

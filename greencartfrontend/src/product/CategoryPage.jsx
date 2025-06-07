@@ -7,7 +7,7 @@ import { addProductToCart } from "../api"; // Make sure this path is correct
 import QuickViewModal from "../product/QuickViewModel"; // Adjust the path if needed
 import { useNavigate } from "react-router-dom";
 import BackButton from "../components/ui/BackButton";
-
+import { fetchProductsByCategoryAPI, fetchWishlistAPI, addToWishlistAPI, removeFromWishlistAPI } from "../api";
 const Notification = ({ message, type, isVisible }) => {
   if (!isVisible) return null;
   
@@ -43,14 +43,13 @@ const ProductCard = ({ product, addToCart,onNotification }) => {
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
-    if (!token) return;
+        if (!token) return;
 
     const fetchWishlist = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/wishlist/:userId", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await fetchWishlistAPI(); // ✅ centralized API call
         const wishlistItems = response.data;
+
         setIsWishlisted(wishlistItems.some((item) => item.product._id === product._id));
       } catch (error) {
         console.error("Error fetching wishlist:", error);
@@ -71,17 +70,11 @@ const ProductCard = ({ product, addToCart,onNotification }) => {
 
     try {
       if (isWishlisted) {
-        await axios.delete(`http://localhost:5000/api/wishlist/remove/${product._id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await removeFromWishlistAPI(product._id); // ✅ centralized call
         onNotification?.("Removed from wishlist", "success");
         setIsWishlisted(false);
       } else {
-        await axios.post(
-          "http://localhost:5000/api/wishlist/add",
-          { productId: product._id },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await addToWishlistAPI(product._id); // ✅ centralized call
         onNotification?.("Added to wishlist", "success");
         setIsWishlisted(true);
       }
@@ -114,12 +107,6 @@ const ProductCard = ({ product, addToCart,onNotification }) => {
       className="bg-white rounded-xl overflow-hidden shadow hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 relative group"
     >
       <BackButton/>
-
-
-
-
-
-
       {/* Wishlist Button */}
       <button
         onClick={handleWishlistToggle}
@@ -134,10 +121,6 @@ const ProductCard = ({ product, addToCart,onNotification }) => {
           <Heart className="w-5 h-5" fill={isWishlisted ? "red" : "none"} />
         )}
       </button>
-
- 
-
-
 
       {/* Image Container */}
       <div className="relative overflow-hidden aspect-square bg-gray-50">
@@ -259,9 +242,7 @@ const CategoryPage = () => {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(
-          `http://localhost:5000/api/products/category/${encodeURIComponent(category)}`
-        );
+        const response = await fetchProductsByCategoryAPI(category); // ✅ centralized API usage
         console.log("Fetched Products:", response.data);
         setProducts(response.data);
       } catch (error) {
@@ -426,27 +407,6 @@ const CategoryPage = () => {
           </motion.div>
         )}
       </div>
-      
-      {/* Recommendation Section
-      {!loading && products.length > 0 && (
-        <div className="bg-gray-50 py-10">
-          <div className="container mx-auto px-4">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">You May Also Like</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4">
-              {products.slice(0, 5).map((product, index) => (
-                <motion.div
-                  key={`recommended-${product._id}`}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <ProductCard product={product} addToCart={addToCart} />
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )} */}
     </div>
   );
 };

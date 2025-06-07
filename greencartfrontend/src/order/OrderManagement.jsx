@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card"
 import { AlertCircle, Check, Download, Printer, RefreshCw, Search, Sliders } from "lucide-react";
 import {updateOrderStatus } from "../api";
 import Notification from "../components/ui/notification/Notification";
-
+import { getAllOrders,getUserById,getOrderDetailsByOrderId,getAddressById,getProductById } from "../api";
 const OrderManagementDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
@@ -29,67 +29,145 @@ const showNotification = (message) => {
   setTimeout(() => setNotification({ message: "", show: false }), 9000);
 };
 
-  const fetchOrders = async () => {
-    setIsRefreshing(true);
-    try {
-      const orderRes = await axios.get("http://localhost:5000/api/orders");
-      let ordersData = orderRes.data;
+const fetchOrders = async () => {
+  setIsRefreshing(true);
+  try {
+    // Step 1: Fetch basic order data first (limit to essential fields to load faster)
+    const orderRes = await getAllOrders(); 
+    const ordersData = orderRes.data;
 
-      // Fetch user details for each order
-      const userRequests = ordersData.map(order =>
-        axios.get(`http://localhost:5000/api/users/${order.user}`).then(res => res.data)
-      );
-
-      // Fetch order details for each order
-      const orderDetailRequests = ordersData.map(order =>
-        axios.get(`http://localhost:5000/api/order-details/order/${order._id}`).then(res => res.data)
-      );
-
-      const usersData = await Promise.all(userRequests);
-      const orderDetailsData = await Promise.all(orderDetailRequests);
-
-      const addressRequests = orderDetailsData.map(orderDetail => {
-        const addressId = orderDetail?.deliveryAddress?._id || orderDetail?.deliveryAddress;
-        if (!addressId) return Promise.resolve(null);
-        return axios.get(`http://localhost:5000/api/addresses/${addressId}`).then(res => res.data);
-      });
-
-      const addressesData = await Promise.all(addressRequests);
-    // Fetch product details and attach them to orderItems
-    const productRequests = ordersData.map(order =>{
-      Promise.all(
-        order.orderItems.map(async (item) => {
-          const productRes = await axios.get(`http://localhost:5000/api/products/${item.product}`);
-          // console.log("Product details:", item,productRes.data);
-          return { ...item, productDetails: productRes.data }; // Merge product details into item
-        })
-      )
-    }
+    // Step 2: Sort and apply current filters first so we only process what's needed
+    const sortedOrders = ordersData.sort((a, b) => 
+      new Date(b.orderDate) - new Date(a.orderDate)
     );
-const productDetailsData = await Promise.all(productRequests);
-      // Merge data into orders
-      const updatedOrders = ordersData.map((order, index) => ({
-        ...order,
-        userDetails: usersData[index] || {},
-        orderDetails: orderDetailsData[index] || {},
-        addressDetails: addressesData[index] || {},
-        productDetailsData: productDetailsData[index] || []
-      }));
-      // Sort orders by date (newest first)
-      const sortedOrders = updatedOrders.sort((a, b) => {
-        return new Date(b.orderDate) - new Date(a.orderDate);
-      });
-      
-      setOrders(sortedOrders);
-      setFilteredOrders(sortedOrders);
-
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-    } finally {
-      setLoading(false);
-      setIsRefreshing(false);
+    
+    // Apply any existing filters to reduce the dataset we process
+    let initialFilteredOrders = sortedOrders;
+    if (statusFilter) {
+      initialFilteredOrders = initialFilteredOrders.filter(o => o.orderStatus === statusFilter);
     }
-  };
+    if (dateFilter) {
+      const formatDate = (date) => {
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+      
+      initialFilteredOrders = initialFilteredOrders.filter(o => 
+        formatDate(o.orderDate) === dateFilter
+      );
+    }
+    if (searchText) {
+      initialFilteredOrders = initialFilteredOrders.filter(o => 
+        o._id.includes(searchText)
+      );
+    }
+    
+    // Step 3: Set basic order data immediately to improve perceived performance
+    setOrders(sortedOrders.map(order => ({
+      ...order,
+      userDetails: {}, 
+      orderDetails: {},
+      addressDetails: {},
+      productDetailsData: []
+    })));
+    setFilteredOrders(initialFilteredOrders.map(order => ({
+      ...order,
+      userDetails: {}, 
+      orderDetails: {},
+      addressDetails: {},
+      productDetailsData: []
+    })));
+    
+    // If we have many orders, set loading to false to show the initial data
+    if (initialFilteredOrders.length > 20) {
+      setLoading(false);
+    }
+    
+    // Step 4: Process orders in batches to prevent UI blocking
+    const BATCH_SIZE = 10;
+    const enrichedOrders = [...sortedOrders];
+    
+    for (let i = 0; i < sortedOrders.length; i += BATCH_SIZE) {
+      const batch = sortedOrders.slice(i, i + BATCH_SIZE);
+      
+      // Process this batch
+      await Promise.all(batch.map(async (order, batchIndex) => {
+        const orderIndex = i + batchIndex;
+        
+        try {
+          // Fetch essential data in parallel
+          const [userRes, orderDetailsRes] = await Promise.all([
+            getUserById(order.user),
+            getOrderDetailsByOrderId(order._id),
+          ]);
+          
+          const userData = userRes.data;
+          const orderDetailsData = orderDetailsRes.data;
+          
+          // Get address details only if needed
+          let addressData = {};
+          if (orderDetailsData?.deliveryAddress) {
+            const addressId = orderDetailsData.deliveryAddress._id || orderDetailsData.deliveryAddress;
+            if (addressId) {
+              try {
+                const addressRes = await getAddressById(addressId);
+                addressData = addressRes.data;
+              } catch (error) {
+                console.warn(`Could not fetch address for order ${order._id}:`, error);
+              }
+            }
+          }
+          
+          // Get minimal product info for order items
+          const productDetailsData = await Promise.all(
+            order.orderItems.map(async (item) => {
+              // Only fetch product details if necessary for display
+              if (!item.product.Name) { // If we don't have the product name already
+                try {
+                  const productRes = await getProductById(item.product._id);
+                  return { ...item, productDetails: productRes.data };
+                } catch (error) {
+                  console.warn(`Could not fetch product ${item.product._id}:`, error);
+                  return { ...item, productDetails: { Name: "Unknown Product" } };
+                }
+              }
+              return { ...item, productDetails: item.product };
+            })
+          );
+          
+          // Update the order with enriched data
+          enrichedOrders[orderIndex] = {
+            ...order,
+            userDetails: userData || {},
+            orderDetails: orderDetailsData || {},
+            addressDetails: addressData || {},
+            productDetailsData: productDetailsData || [],
+          };
+          
+          // Periodically update the state to show progress
+          if (batchIndex === batch.length - 1 || batchIndex % 5 === 0) {
+            setOrders([...enrichedOrders]);
+            
+            // Also update filtered orders
+            const updatedFilteredOrders = applyFilters(enrichedOrders);
+            setFilteredOrders(updatedFilteredOrders);
+          }
+        } catch (error) {
+          console.warn(`Error processing order ${order._id}:`, error);
+        }
+      }));
+    }
+
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+  } finally {
+    setLoading(false);
+    setIsRefreshing(false);
+  }
+};
 
   useEffect(() => {
     fetchOrders();
@@ -103,9 +181,18 @@ const productDetailsData = await Promise.all(productRequests);
         order._id.includes(searchText) ||
         order.userDetails?.UserName?.toLowerCase().includes(searchText.toLowerCase()) ||
         order.addressDetails?.city?.toLowerCase().includes(searchText.toLowerCase());
-
+        const formatDate = (date) => {
+          const d = new Date(date);
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        };
+        
+        const matchesDate = dateFilter === "" || formatDate(order.orderDate) === dateFilter;
+        
       const matchesStatus = statusFilter === "" || order.orderStatus === statusFilter;
-      const matchesDate = dateFilter === "" || new Date(order.orderDate).toISOString().split("T")[0] === dateFilter;
+      // const matchesDate = dateFilter === "" || new Date(order.orderDate).toISOString().split("T")[0] === dateFilter;
       const matchesCity = cityFilter === "" || order.addressDetails?.city?.toLowerCase().includes(cityFilter.toLowerCase()) ||
                           order.addressDetails?.cityVillage?.toLowerCase().includes(cityFilter.toLowerCase());
 
@@ -114,7 +201,38 @@ const productDetailsData = await Promise.all(productRequests);
 
     setFilteredOrders(filtered);
   }, [searchText, statusFilter, dateFilter, cityFilter, orders]);
+// Helper function to apply current filters
+const applyFilters = (orders) => {
+  return orders.filter(order => {
+    // Skip orders that haven't been fully loaded yet
+    if (!order.userDetails || !order.addressDetails) return false;
+    
+    const matchesText =
+      searchText === "" ||
+      order._id.includes(searchText) ||
+      order.userDetails?.UserName?.toLowerCase().includes(searchText.toLowerCase()) ||
+      order.addressDetails?.city?.toLowerCase().includes(searchText.toLowerCase()) ||
+      order.addressDetails?.cityVillage?.toLowerCase().includes(searchText.toLowerCase());
+      
+    const formatDate = (date) => {
+      const d = new Date(date);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
+    const matchesDate = dateFilter === "" || formatDate(order.orderDate) === dateFilter;
+    
+    const matchesStatus = statusFilter === "" || order.orderStatus === statusFilter;
+    
+    const matchesCity = cityFilter === "" || 
+      order.addressDetails?.city?.toLowerCase().includes(cityFilter.toLowerCase()) ||
+      order.addressDetails?.cityVillage?.toLowerCase().includes(cityFilter.toLowerCase());
 
+    return matchesText && matchesStatus && matchesDate && matchesCity;
+  });
+};
   const handleStatusChange = (orderId, status) => {
     setConfirmingOrderStatus({ orderId, status });
   };
@@ -184,7 +302,6 @@ const productDetailsData = await Promise.all(productRequests);
       setConfirmingOrderStatus(null);
     }
   };
-  
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -548,12 +665,13 @@ const productDetailsData = await Promise.all(productRequests);
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <motion.div 
-              className="bg-white rounded-lg shadow-xl w-full max-w-md m-4"
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-            >
+              <motion.div 
+                className="bg-white rounded-lg shadow-xl w-full max-w-md m-4 max-h-[90vh] overflow-y-auto"
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+              >
+
               <div className="p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-xl font-bold text-gray-900">Order Details</h3>
@@ -598,7 +716,7 @@ const productDetailsData = await Promise.all(productRequests);
                         <div className="space-y-2">
                           {selectedOrder.orderItems.map((item, index) => (
                             <div key={index} className="text-sm text-gray-900 border-b pb-2">
-                              <p className="font-medium">{item?.product || "Unknown Product"}</p>
+                              <p className="font-medium">{item?.product.Name || "Unknown Product"}</p>
                               <div className="flex justify-between mt-1">
                                 <span>Qty: {item.quantity}</span>
                                 <span className="flex items-center">

@@ -44,7 +44,7 @@ exports.authorizeRole = (role) => {
       }
 
       // Check if the user has the required role
-      if (user.UserType !== role) {
+      if (user.UserType !== role && role !== 'Manager') {
         return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
       }
 
@@ -72,7 +72,7 @@ exports.authorizeAdmin = async (req, res, next) => {
       return res.status(403).json({ message: 'Access Denied. Only admins can perform this action.' });
     }
     const admin = await Admin.findById(req.user.id);
-    if (admin.role === 'Admin') {
+    if (admin.role === 'Admin' || admin.role === 'Manager') {
       next(); // ✅ User is an admin, continue
     }
     else{

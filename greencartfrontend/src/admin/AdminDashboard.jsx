@@ -7,12 +7,10 @@ import {
   BookImage,PlusCircle,ListOrdered
 } from 'lucide-react';
 import {Card , CardContent} from '../components/ui/Card';
-import { NavLink } from 'react-router-dom';
+import { NavLink, redirect } from 'react-router-dom';
 import AdminNavbar from '../components/AdminNavigation';
-import axios from 'axios';
 import { Alert, AlertDescription } from '../components/ui/Aleart';
-import Blog from '../Home/Blog';
-
+import { fetchNotifications,fetchAdminStats } from '../api';
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -24,46 +22,47 @@ const AdminDashboard = () => {
   const [notifications, setNotifications] = useState([]);
   
   useEffect(() => {
-    const fetchNotifications = async () => {
+    const getNotifications = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/notifications");
-        const data =  res.data.notifications;
-        // Sort notifications by latest and limit to 3
-        setNotifications(data.slice(0, 3));
+        const res = await fetchNotifications();
+        console.log("Notification data: ", res);
+        const data = res.data.notifications;
+  
+        const unreadNotifications = data.filter(notif => notif.status === "unread");
+        setNotifications(unreadNotifications.slice(0, 3));
       } catch (error) {
         console.error("Error fetching notifications:", error);
       }
     };
-
-    fetchNotifications();
-  }, []);
+  
+    getNotifications();
+  }, []);  
 
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const getStats = async () => {
       try {
         const token = localStorage.getItem("authToken");
         if (!token) {
           console.error("No auth token found");
           return;
         }
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        const { data } = await axios.get("http://localhost:5000/api/admins/stats", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
   
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulating delay
+        
+        const { data } = await fetchAdminStats(token);
         console.log(data);
         setStats(data);
-        
+  
       } catch (error) {
         console.error("Error fetching dashboard stats:", error);
       }
     };
   
-    fetchStats();
+    getStats();
   }, []);
+  
   const notificationTypeLabels = {
     new_user: "New User Registered",
     new_order: "New Order Placed",
@@ -207,76 +206,6 @@ const AdminDashboard = () => {
     }
   ];
 
-//   return (
-//     <div>
-//     <AdminNavbar />
-//       {/* Dashboard Content */}
-//       <div className="max-w-8xl mx-auto mt-9 p-9">
-
-//       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-10">
-//   {/* Total Users - Yellow */}
-//   <Card className="bg-yellow-400 text-gray-900 shadow-lg h-36 md:h-44 rounded-xl">
-//     <CardContent className="p-6 flex flex-col justify-center items-center">
-//       <Users className="h-12 w-12 mb-2 text-gray-800" />
-//       <h3 className="text-4xl font-extrabold">{stats.totalUsers}</h3>
-//       <p className="text-lg font-medium">Total Users</p>
-//     </CardContent>
-//   </Card>
-
-//   {/* Total Sales - Green */}
-//   <Card className="bg-green-400 text-black-900 shadow-lg h-36 md:h-44 rounded-xl">
-//     <CardContent className="p-6 flex flex-col justify-center items-center">
-//       <IndianRupee className="h-12 w-12 mb-2 text-gray-800" />
-//       <h3 className="text-4xl font-extrabold">₹{stats.totalSales}</h3>
-//       <p className="text-lg font-medium">Total Sales</p>
-//     </CardContent>
-//   </Card>
-
-//   {/* Total Products - Purple */}
-//   <Card className="bg-pink-500 text-black shadow-lg h-36 md:h-44 rounded-xl">
-//     <CardContent className="p-6 flex flex-col justify-center items-center">
-//       <Package className="h-12 w-12 mb-2 text-gray-200" />
-//       <h3 className="text-4xl font-extrabold">{stats.totalProducts}</h3>
-//       <p className="text-lg font-medium">Total Products</p>
-//     </CardContent>
-//   </Card>
-
-//   {/* Total Orders - Light Blue */}
-//   <Card className="bg-sky-500 text-black shadow-lg h-36 md:h-44 rounded-xl">
-//     <CardContent className="p-6 flex flex-col justify-center items-center">
-//       <ShoppingCart className="h-12 w-12 mb-2 text-gray-200" />
-//       <h3 className="text-4xl font-extrabold">{stats.totalOrders}</h3>
-//       <p className="text-lg font-medium">Total Orders</p>
-//     </CardContent>
-//   </Card>
-// </div>
-
-
-//         {/* Feature Cards Grid */}
-//         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-//           {adminFeatures.map(feature => (
-//            <NavLink to={feature.link} key={feature.id}>
-//            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-//              <CardContent className="p-6">
-//                <div className={`w-12 h-12 rounded-lg ${feature.color} text-white flex items-center justify-center mb-4`}>
-//                  {feature.icon}
-//                </div>
-//                <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
-//                <div className="flex items-center text-gray-600">
-//                  <Activity className="h-4 w-4 mr-2" />
-//                  <span className="text-sm">View Details</span>
-//                </div>
-//              </CardContent>
-//            </Card>
-//          </NavLink>         
-//           ))}
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default AdminDashboard;
 return (
   <div className="min-h-screen bg-gray-50">
     <AdminNavbar/>

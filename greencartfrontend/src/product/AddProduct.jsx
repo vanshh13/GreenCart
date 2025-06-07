@@ -4,6 +4,7 @@ import { Upload, X, Eye, Check, Loader2} from "lucide-react";
 import AdminNavbar from "../components/AdminNavigation";
 import { motion, AnimatePresence  } from "framer-motion";
 import ProductCatalog from "./ProductCatalog";
+import { addProductAPI } from "../api"; 
 const AddProduct = () => {
   const [product, setProduct] = useState({
     Name: "",
@@ -68,44 +69,38 @@ const AddProduct = () => {
   };
 
   // Submit Form
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+ const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (!validateForm()) return;
+  if (!validateForm()) return;
 
-    setIsLoading(true);
-    setSubmitStatus(null);
+  setIsLoading(true);
+  setSubmitStatus(null);
 
-    const formData = new FormData();
-    Object.entries(product).forEach(([key, value]) => {
-      if (key === "Images") {
-        value.forEach((image) => formData.append("images", image.file));
-      } else {
-        formData.append(key, value);
-      }
-    });
-
-    try {
-      const token = localStorage.getItem("authToken");
-      const response = await axios.post("http://localhost:5000/api/products", formData, {
-        headers: { 
-          "Content-Type": "multipart/form-data",
-          "Authorization": `Bearer ${token}` // ✅ Adding the token in the headers
-        },
-      });
-
-      setNewProductId(response.data._id);
-      setSubmitStatus('success');
-      setTimeout(() => {
-        setIsLoading(false);
-        setIsPreviewModalOpen(true);
-      }, 1500);
-    } catch (error) {
-      console.error("Error:", error.response?.data);
-      setSubmitStatus('error');
-      setIsLoading(false);
+  const formData = new FormData();
+  Object.entries(product).forEach(([key, value]) => {
+    if (key === "Images") {
+      value.forEach((image) => formData.append("images", image.file));
+    } else {
+      formData.append(key, value);
     }
-  };
+  });
+
+  try {
+    const response = await addProductAPI(formData); // ✅ using centralized API function
+
+    setNewProductId(response.data._id);
+    setSubmitStatus("success");
+    setTimeout(() => {
+      setIsLoading(false);
+      setIsPreviewModalOpen(true);
+    }, 1500);
+  } catch (error) {
+    console.error("Error:", error.response?.data);
+    setSubmitStatus("error");
+    setIsLoading(false);
+  }
+};
 
   // Preview Functionality
   const handlePreviewClick = () => {

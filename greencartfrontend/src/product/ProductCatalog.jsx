@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { getProductById } from "../api";
 
 const ProductCatalog = ({ productId, onClose }) => {
   const [product, setProduct] = useState(null);
@@ -10,7 +11,7 @@ const ProductCatalog = ({ productId, onClose }) => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/products/${productId}`);
+        const response = await getProductById(productId);
         setProduct(response.data);
         if (response.data.Images && response.data.Images.length > 0) {
           setSelectedImage(response.data.Images[0]); // Set first image as default
@@ -74,17 +75,12 @@ const ProductCatalog = ({ productId, onClose }) => {
               {/* Product Info */}
               <div className="md:w-1/2 md:pl-6">
                 <p className="text-gray-600 text-lg mb-2">{product.Description}</p>
-                <p className="text-gray-700 font-bold text-xl">Price: ${product.Price}</p>
+                <p className="text-gray-700 font-bold text-xl">Price: ₹{product.Price}</p>
                 <p className={`text-sm mt-2 ${product.Stock > 0 ? "text-green-500" : "text-red-500"}`}>
                   {product.Stock > 0 ? `In Stock: ${product.Stock}` : "Out of Stock"}
                 </p>
                 <p className="mt-2 text-sm text-gray-500">Category: {product.Category}</p>
                 <p className="mt-2 text-sm text-gray-500">SubCategory: {product.SubCategory}</p>
-
-                {/* Rating */}
-                <div className="mt-4 flex items-center">
-                  <span className="text-yellow-400 text-lg font-bold">{product.Rating} ⭐</span>
-                </div>
               </div>
             </div>
           </div>

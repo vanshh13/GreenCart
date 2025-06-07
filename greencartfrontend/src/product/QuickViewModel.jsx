@@ -4,6 +4,7 @@ import { X, ShoppingCart, Heart, Package } from 'lucide-react';
 import { CheckCircle, AlertCircle } from "lucide-react";
 import axios from "axios";
 import { useEffect } from "react"
+import { addToWishlistAPI, fetchWishlistAddAPI, removeFromWishlistAPI } from '../api';
 // Simplified Notification Component
 const Notification = ({ message, type, isVisible }) => {
   if (!isVisible) return null;
@@ -49,9 +50,7 @@ const QuickViewModal = ({ product, addToCart, isOpen, onClose }) => {
       if (!token) return;
 
       try {
-        const response = await axios.get("http://localhost:5000/api/wishlist/add", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await fetchWishlistAddAPI();
 
         const wishlistItems = response.data || [];
         setIsWishlisted(wishlistItems.some((item) => item.product._id === product._id));
@@ -119,17 +118,11 @@ const QuickViewModal = ({ product, addToCart, isOpen, onClose }) => {
 
     try {
       if (isWishlisted) {
-        await axios.delete(`http://localhost:5000/api/wishlist/remove/${product._id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await removeFromWishlistAPI(product._id);
         onNotification("Removed from wishlist", "success");
         setIsWishlisted(false);
       } else {
-        await axios.post(
-          "http://localhost:5000/api/wishlist/add",
-          { productId: product._id },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await addToWishlistAPI(product._id);
         onNotification("Added to wishlist", "success");
         setIsWishlisted(true);
       }

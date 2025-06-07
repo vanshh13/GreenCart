@@ -3,7 +3,7 @@ import { Check, Filter, Search, ChevronDown, Eye, Trash2, RefreshCw } from 'luci
 import AdminNavbar from '../components/AdminNavigation';
 import { motion, AnimatePresence } from "framer-motion";
 import axios from 'axios';
-
+import { fetchNotificationsAPI, markNotificationAsRead, markAllNotificationsAsRead, clearAllNotificationsAPI } from '../api';
 const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
   const [filteredNotifications, setFilteredNotifications] = useState([]);
@@ -46,11 +46,10 @@ const NotificationsPage = () => {
     toggleDropdown(dropdown);
   };
   
-  // Fetch notifications
   const fetchNotifications = async () => {
     try {
       setIsLoading(true);
-      const res = await axios.get("http://localhost:5000/api/notifications");
+      const res = await fetchNotificationsAPI();
       const data = res.data;
       console.log(data.notifications);
       setNotifications(data.notifications);
@@ -61,7 +60,7 @@ const NotificationsPage = () => {
       console.error("Error fetching notifications:", error);
       setIsLoading(false);
     }
-  };
+  };  
   
   useEffect(() => {
     fetchNotifications();
@@ -109,56 +108,57 @@ const NotificationsPage = () => {
     setFilteredNotifications(filtered);
   }, [activeFilters, notifications, searchQuery]);
   
-  // Mark notification as read
-  const markAsRead = async (id) => {
-    try {
-      const res = await axios.put(`http://localhost:5000/api/notifications/${id}/read`);
-      
-      if (res.status === 200) {
-        setNotifications((prevNotifications) =>
-          prevNotifications.map((notif) =>
-            notif._id === id ? { ...notif, status: "read" } : notif
-          )
-        );
-        setUnreadCount((prev) => prev - 1);
-      }
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
-    }
-  };
+// Mark notification as read
+const markAsRead = async (id) => {
+  try {
+    const res = await markNotificationAsRead(id);
 
-  // Mark all as read
-  const markAllAsRead = async () => {
-    try {
-      const res = await axios.put(`http://localhost:5000/api/notifications/mark-all-read`);
-
-      if (res.status === 200) {
-        setNotifications((prevNotifications) =>
-          prevNotifications.map((notif) => ({ ...notif, status: "read" }))
-        );
-        setUnreadCount(0);
-      }
-    } catch (error) {
-      console.error("Error marking all notifications as read:", error);
+    if (res.status === 200) {
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notif) =>
+          notif._id === id ? { ...notif, status: "read" } : notif
+        )
+      );
+      setUnreadCount((prev) => prev - 1);
     }
-  };
+  } catch (error) {
+    console.error("Error marking notification as read:", error);
+  }
+};
 
-  // Clear all notifications
-  const clearAllNotifications = async () => {
-    if (!window.confirm("Are you sure you want to delete all notifications?")) return;
-  
-    try {
-      const res = await axios.delete("http://localhost:5000/api/notifications/clear-all");
-  
-      if (res.status === 200) {
-        fetchNotifications();
-        setFilteredNotifications([]);
-        setUnreadCount(0);
-      }
-    } catch (error) {
-      console.error("Error clearing notifications:", error);
+// Mark all as read
+const markAllAsRead = async () => {
+  try {
+    const res = await markAllNotificationsAsRead();
+
+    if (res.status === 200) {
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notif) => ({ ...notif, status: "read" }))
+      );
+      setUnreadCount(0);
     }
-  };
+  } catch (error) {
+    console.error("Error marking all notifications as read:", error);
+  }
+};
+
+// Clear all notifications
+const clearAllNotifications = async () => {
+  if (!window.confirm("Are you sure you want to delete all notifications?")) return;
+
+  try {
+    const res = await clearAllNotificationsAPI();
+
+    if (res.status === 200) {
+      fetchNotifications();
+      setFilteredNotifications([]);
+      setUnreadCount(0);
+    }
+  } catch (error) {
+    console.error("Error clearing notifications:", error);
+  }
+};
+
   
   // Get notification icon based on type
   const getNotificationIcon = (type) => {

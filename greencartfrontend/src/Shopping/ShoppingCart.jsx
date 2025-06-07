@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart as CartIcon, Trash2, Plus, Minus, Loader2, MapPin, CreditCard, Package, ArrowRight, CheckCircle } from "lucide-react";
 import { toast } from "react-toastify";
-import { fetchCartItems, updateCartItemQuantity, removeCartItem, confirmOrder, fetchUserAddresses, createNewAddress } from "../api";
+import { fetchCartItems, updateCartItemQuantity, removeCartItem, confirmOrder, fetchUserAddresses, createNewAddress, getUserdetails } from "../api";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/Card";
 import AddressModal from "../components/AddressModal";
 import { Label } from "../components/ui/Label";
@@ -46,11 +46,7 @@ const ShoppingCart = () => {
         const token = localStorage.getItem("authToken");
         // Assuming you have an API to fetch user profile info
         // Replace with your actual API call
-        const response = await fetch("http://localhost:5000/api/users/getuserdetails", {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+        const response = await getUserdetails();
         const userData = await response.json();
         if (userData.success) {
           setCustomerInfo({

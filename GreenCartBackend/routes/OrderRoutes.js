@@ -4,6 +4,7 @@ const { authenticateToken, authorizeRole , authorizeAdmin} = require('../middlew
 
 const router = express.Router();
 router.get('/user', authenticateToken,authorizeRole('Customer'), OrderController.getOrderByUser);
+router.get("/with-details", OrderController.getAllOrdersWithDetails);
 router.post('/', authenticateToken, authorizeRole('Customer'), OrderController.createOrder); // Create an Order
 router.get('/', OrderController.getOrders); // Get orders
 router.get('/tracking/:orderId/', authenticateToken,authorizeRole('Customer'), OrderController.OrderTracking);

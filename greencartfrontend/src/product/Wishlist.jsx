@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Heart, Package, Loader2, Trash2, ShoppingCart, BadgeCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { addProductToCart } from "../api";
+import { addProductToCart, fetchWishlistAddAPI, removeFromWishlistAPI } from "../api";
 import { useNavigate } from "react-router-dom";
 import QuickViewModal from "../product/QuickViewModel"; // Adjust the path if needed
 import BackButton from "../components/ui/BackButton";
@@ -28,9 +28,7 @@ const Wishlist = () => {
 
     const fetchWishlist = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/wishlist/add", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = fetchWishlistAddAPI();
         setWishlist(response.data);
       } catch (error) {
         console.error("Error fetching wishlist:", error);
@@ -48,9 +46,7 @@ const Wishlist = () => {
     }
 
     try {
-      await axios.delete(`http://localhost:5000/api/wishlist/remove/${productId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await removeFromWishlistAPI(productId);
       setWishlist(
         wishlist
           .filter(item => item && item.product) // Remove null/undefined items

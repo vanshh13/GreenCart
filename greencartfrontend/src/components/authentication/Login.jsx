@@ -37,7 +37,7 @@ const Login = ({ onSwitchToRegister, showNotification }) => {
         
         // Redirect user based on role
         setTimeout(() => {
-          navigate(response.data.role === "Admin" ? "/admin-dashboard" : "/home");
+          navigate(response.data.role === "Admin" || response.data.role ==="Manager" ? "/admin-dashboard" : "/home");
         }, 1000);
       } else {
         showNotification("Login failed! Invalid credentials");

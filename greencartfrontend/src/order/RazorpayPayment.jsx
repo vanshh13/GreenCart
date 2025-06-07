@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { createRazorpayOrder,verifyRazorpayPayment,getPaymentDetails } from "../api";
 
 const RazorpayPayment = ({ amount, onSuccess, onFailure, customerInfo }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,21 +28,27 @@ const RazorpayPayment = ({ amount, onSuccess, onFailure, customerInfo }) => {
   const createOrder = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.post("http://localhost:5000/api/create-order", {
+      const response = await createRazorpayOrder({
         amount: amount,
-        currency: "INR"
+        currency: "INR",
       });
-
+  
       if (response.data.success) {
-        openRazorpayCheckout(response.data);
+        openRazorpayCheckout(response.data); // your Razorpay integration logic
       } else {
         toast.error("Failed to create payment order");
         if (onFailure) onFailure("Failed to create order");
       }
     } catch (error) {
-      console.error("Error creating order:", error);
-      toast.error("Payment initialization failed");
-      if (onFailure) onFailure("Payment initialization failed");
+      console.error("Error creating Razorpay order:", error);
+  
+      if (error.response?.status === 403) {
+        toast.error("Session expired! Redirecting to login...");
+        setTimeout(() => (window.location.href = "/authpage"), 2000);
+      } else {
+        toast.error("Payment initialization failed");
+        if (onFailure) onFailure("Payment initialization failed");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -90,12 +97,11 @@ const RazorpayPayment = ({ amount, onSuccess, onFailure, customerInfo }) => {
       const verifyData = {
         razorpay_order_id: response.razorpay_order_id,
         razorpay_payment_id: response.razorpay_payment_id,
-        razorpay_signature: response.razorpay_signature
+        razorpay_signature: response.razorpay_signature,
       };
-
-      // Verify payment signature
-      const verifyResponse = await axios.post("http://localhost:5000/api/verify-payment", verifyData);
-      
+  
+      const verifyResponse = await verifyRazorpayPayment(verifyData);
+  
       if (verifyResponse.data.success) {
         setPaymentId(response.razorpay_payment_id);
         toast.success("Payment successful!");
@@ -106,8 +112,14 @@ const RazorpayPayment = ({ amount, onSuccess, onFailure, customerInfo }) => {
       }
     } catch (error) {
       console.error("Payment verification error:", error);
-      toast.error("Payment verification failed");
-      if (onFailure) onFailure("Payment verification failed");
+  
+      if (error.response?.status === 403) {
+        toast.error("Session expired! Redirecting to login...");
+        setTimeout(() => (window.location.href = "/authpage"), 2000);
+      } else {
+        toast.error("Payment verification failed");
+        if (onFailure) onFailure("Payment verification failed");
+      }
     }
   };
 
@@ -117,11 +129,11 @@ const RazorpayPayment = ({ amount, onSuccess, onFailure, customerInfo }) => {
       toast.error("Please enter a payment ID");
       return;
     }
-
+  
     setIsLoading(true);
     try {
-      const response = await axios.get(`http://localhost:5000/api/payment/${paymentId}`);
-      
+      const response = await getPaymentDetails(paymentId);
+  
       if (response.data.success) {
         setPaymentDetails(response.data);
         toast.success("Payment details fetched successfully");

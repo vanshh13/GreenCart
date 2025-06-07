@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import BackButton from "../components/ui/BackButton";
+import { getAllBlogsFrontend } from "../api";
 
 const Blog = () => {
   const [blogs, setBlogs] = useState([]);
@@ -12,16 +13,18 @@ const Blog = () => {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/blogs/all");
+        const res = await getAllBlogsFrontend();
         setBlogs(res.data);
       } catch (err) {
         setError("Failed to fetch blogs. Please try again.");
         console.error("Error fetching blogs:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
+  
     fetchBlogs();
-  }, []);
+  }, []);  
 
   const toggleExpand = (id) => {
     setExpandedId(expandedId === id ? null : id);

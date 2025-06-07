@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import axios from "axios";
 import { ShoppingCart, Package, Loader2, Heart, CheckCircle, AlertCircle } from "lucide-react";
-import { addProductToCart } from "../api";
+import { addProductToCart, fetchWishlistAddAPI, fetchAllProductsAPI,  addToWishlistAPI, removeFromWishlistAPI } from "../api";
 import { useCart } from "../Context/CartContext";
 import QuickViewModal from "../product/QuickViewModel"; // Adjust the path if needed
 
@@ -41,25 +40,23 @@ const ProductCard = ({ product, addToCart, onNotification }) => {
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     if (!token) return;
-    const fetchWishlist = async () => {
-      const token = localStorage.getItem("authToken");
-      if (!token) return;
+  const fetchWishlist = async () => {
+    const token = localStorage.getItem("authToken");
+    if (!token) return;
 
-      try {
-        const response = await axios.get("http://localhost:5000/api/wishlist/add", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+    try {
+      const response = await fetchWishlistAddAPI();
+      const wishlistItems = response.data || [];
 
-        const wishlistItems = response.data || [];
-        setIsWishlisted(wishlistItems.some((item) => item.product._id === product._id));
-      } catch (error) {
-        console.error("Error fetching wishlist:", error.response?.data || error.message);
-      }
-    };
+      setIsWishlisted(wishlistItems.some((item) => item.product._id === product._id));
+    } catch (error) {
+      console.error("Error fetching wishlist:", error.response?.data || error.message);
+    }
+  };
+
 
     fetchWishlist();
   }, [product._id]);
-
   const handleWishlistToggle = async () => {
     const token = localStorage.getItem("authToken");
     if (!token) {
@@ -71,17 +68,11 @@ const ProductCard = ({ product, addToCart, onNotification }) => {
 
     try {
       if (isWishlisted) {
-        await axios.delete(`http://localhost:5000/api/wishlist/remove/${product._id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await removeFromWishlistAPI(product._id);
         onNotification?.("Removed from wishlist", "success");
         setIsWishlisted(false);
       } else {
-        await axios.post(
-          "http://localhost:5000/api/wishlist/add",
-          { productId: product._id },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await addToWishlistAPI(product._id);
         onNotification?.("Added to wishlist", "success");
         setIsWishlisted(true);
       }
@@ -92,6 +83,7 @@ const ProductCard = ({ product, addToCart, onNotification }) => {
 
     setWishlistLoading(false);
   };
+
 
   const handleAddToCart = async () => {
     setIsLoading(true);
@@ -234,12 +226,12 @@ const ProductHome = () => {
     const fetchProducts = async () => {
       try {
         setIsLoading(true);
-        const response = await axios.get("http://localhost:5000/api/products");
+        const response = await fetchAllProductsAPI();
         setProducts(response.data);
-        setIsLoading(false);
       } catch (error) {
         console.error("Error fetching products:", error);
         setError("Failed to load products. Please try again later.");
+      } finally {
         setIsLoading(false);
       }
     };
