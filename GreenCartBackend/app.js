@@ -24,7 +24,7 @@ const app = express();
 
 // Configure CORS with specific options
 app.use(cors({
-  origin: 'http://localhost:3000', // Replace with your frontend URL
+  origin: process.env.FRONTEND_URL, // Replace with your frontend URL
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
@@ -117,7 +117,7 @@ app.post('/api/verify-payment', async (req, res) => {
     // Create a signature to verify
     const crypto = require('crypto');
     const secret = process.env.RAZORPAY_KEY_SECRET || "71W2BO6yJp5w5zwcOmStw8YX";
-    
+
     const generated_signature = crypto
       .createHmac('sha256', secret)
       .update(razorpay_order_id + "|" + razorpay_payment_id)
