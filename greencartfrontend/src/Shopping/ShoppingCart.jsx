@@ -44,15 +44,14 @@ const ShoppingCart = () => {
     const fetchUserInfo = async () => {
       try {
         const token = localStorage.getItem("authToken");
-        // Assuming you have an API to fetch user profile info
-        // Replace with your actual API call
         const response = await getUserdetails();
-        const userData = await response.json();
+        const userData = await response.data;
+        console.log(userData);
         if (userData.success) {
           setCustomerInfo({
-            name: userData.user.name || "",
-            email: userData.user.email || "",
-            phone: userData.user.phone || ""
+            name: userData.user.UserName || "",
+            email: userData.user.UserEmail || "",
+            phone: userData.userTypeData.CustomerContact || ""
           });
         }
       } catch (error) {
