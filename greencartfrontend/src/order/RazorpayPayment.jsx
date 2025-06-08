@@ -60,7 +60,6 @@ const RazorpayPayment = ({ amount, onSuccess, onFailure, customerInfo }) => {
       toast.error("Razorpay SDK failed to load");
       return;
     }
-
     const options = {
       key: process.env.REACT_APP_RAZORPAY_KEY_ID || "rzp_test_90ZGyZNVzzFKRH",
       amount: orderData.amount,
