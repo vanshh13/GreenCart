@@ -90,3 +90,9 @@ GreenCart is a web and mobile platform designed for the sale and management of o
    git commit -m "Added feature-name"
    git push origin feature-name
    ```
+
+## 🚀 Live Demo
+
+Check out the live version of the project here:  
+[https://green-cart-pi-sooty.vercel.app](https://green-cart-pi-sooty.vercel.app)
+
