@@ -20,34 +20,32 @@ const Register = ({ onSwitchToLogin, showNotification }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordError, setPasswordError] = useState("");
 
-  // Password validation function
   const validatePassword = (password) => {
     const errors = [];
-    
+
     if (password.length < 6) {
       errors.push("Password must be at least 6 characters long");
     }
-    
+
     if (!/[A-Z]/.test(password)) {
       errors.push("Password must contain at least one capital letter");
     }
-    
+
     if (!/[0-9]/.test(password)) {
       errors.push("Password must contain at least one digit");
     }
-    
+
     if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
       errors.push("Password must contain at least one special character");
     }
-    
+
     return errors;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    
-    // Check password strength when user types in password field
+
     if (name === "Password") {
       const errors = validatePassword(value);
       setPasswordError(errors.length > 0 ? errors.join(", ") : "");
@@ -56,42 +54,39 @@ const Register = ({ onSwitchToLogin, showNotification }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validate password before submission
+
     const passwordErrors = validatePassword(formData.Password);
     if (passwordErrors.length > 0) {
       setPasswordError(passwordErrors.join(", "));
       return;
     }
-    
+
     if (formData.Password !== formData.confirmPassword) {
-      alert("Passwords do not match!");
+      alert("Passwords do not match!"); // Consider using showNotification here
       return;
     }
-  
+
     const user = {
       UserName: formData.UserName,
       UserEmail: formData.UserEmail,
       Password: formData.Password,
       UserType: "Customer",
     };
-  
+
     try {
       const response = await registerUser(user);
       console.log("Register attempt with:", formData);
-      
+
       showNotification("✅ Register successful!");
       setTimeout(() => {
-        navigate("/authPage");
+        navigate("/authPage"); // Redirect to login after successful registration
       }, 1000);
     } catch (error) {
       console.error("Registration error:", error.response?.data?.message || error.message);
-      
-      // Show error message to the user
-      alert(error.response?.data?.message || "❌ Registration failed. Please try again.");
+      showNotification(error.response?.data?.message || "❌ Registration failed. Please try again."); // Use showNotification
     }
   };
-  
+
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-0">
@@ -104,8 +99,8 @@ const Register = ({ onSwitchToLogin, showNotification }) => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-1">
-          
+        <form onSubmit={handleSubmit} className="space-y-3"> {/* Adjusted spacing */}
+
           {/* UserName Field */}
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">User Name</label>
@@ -117,7 +112,7 @@ const Register = ({ onSwitchToLogin, showNotification }) => {
                 name="UserName"
                 value={formData.UserName}
                 onChange={handleChange}
-                className="pl-10"
+                className="pl-10 border-green-200 focus:border-green-500 focus:ring-green-500" // Added border styles
                 required
               />
             </div>
@@ -134,7 +129,7 @@ const Register = ({ onSwitchToLogin, showNotification }) => {
                 name="UserEmail"
                 value={formData.UserEmail}
                 onChange={handleChange}
-                className="pl-10"
+                className="pl-10 border-green-200 focus:border-green-500 focus:ring-green-500" // Added border styles
                 required
               />
             </div>
@@ -151,7 +146,7 @@ const Register = ({ onSwitchToLogin, showNotification }) => {
                 name="Password"
                 value={formData.Password}
                 onChange={handleChange}
-                className="pl-10 pr-10"
+                className="pl-10 pr-10 border-green-200 focus:border-green-500 focus:ring-green-500" // Added border styles
                 required
               />
               <button
@@ -166,7 +161,7 @@ const Register = ({ onSwitchToLogin, showNotification }) => {
               <p className="text-xs text-red-500 mt-1">{passwordError}</p>
             )}
             <p className="text-xs text-gray-500 mt-1">
-              Password must be at least 6 characters long and contain at least one capital letter, 
+              Password must be at least 6 characters long and contain at least one capital letter,
               one digit, and one special character.
             </p>
           </div>
@@ -182,7 +177,7 @@ const Register = ({ onSwitchToLogin, showNotification }) => {
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="pl-10 pr-10"
+                className="pl-10 pr-10 border-green-200 focus:border-green-500 focus:ring-green-500" // Added border styles
                 required
               />
               <button
