@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { Heart, Package, Loader2, Trash2, ShoppingCart, BadgeCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { addProductToCart, fetchWishlistAddAPI, removeFromWishlistAPI } from "../api";
 import { useNavigate } from "react-router-dom";
 import QuickViewModal from "../product/QuickViewModel"; // Adjust the path if needed
 import BackButton from "../components/ui/BackButton";
+
+import { addProductToCart, removeFromWishlistAPI, fetchWishlistAddAPI } from "../api"; // Assuming addProductToCart is already in '../api'
 
 const Wishlist = () => {
   const [wishlist, setWishlist] = useState([]);
@@ -15,7 +15,7 @@ const Wishlist = () => {
   const [notification, setNotification] = useState({ show: false, message: "" });
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const [quickViewProduct, setQuickViewProduct] = useState(null);
-  
+
   const token = localStorage.getItem("authToken");
   const navigate = useNavigate();
 
@@ -28,10 +28,12 @@ const Wishlist = () => {
 
     const fetchWishlist = async () => {
       try {
-        const response = fetchWishlistAddAPI();
+        // Use your API function here
+        const response = await fetchWishlistAddAPI(); 
         setWishlist(response.data);
       } catch (error) {
         console.error("Error fetching wishlist:", error);
+        showNotification("Failed to fetch wishlist", "error");
       }
       setLoading(false);
     };
@@ -46,15 +48,17 @@ const Wishlist = () => {
     }
 
     try {
+      // Use your API function here
       await removeFromWishlistAPI(productId);
-      setWishlist(
-        wishlist
-          .filter(item => item && item.product) // Remove null/undefined items
-          .filter(item => item.product._id !== productId) // Now safely filter
+      setWishlist((prevWishlist) =>
+        prevWishlist
+          .filter((item) => item && item.product) // Remove null/undefined items
+          .filter((item) => item.product._id !== productId) // Now safely filter
       );
       showNotification("Item removed from wishlist");
     } catch (error) {
       console.error("Error removing from wishlist:", error);
+      showNotification("Failed to remove item from wishlist", "error");
     }
   };
 
@@ -64,11 +68,12 @@ const Wishlist = () => {
       showNotification("This item is out of stock", "error");
       return;
     }
-    
+
     setIsLoading((prevState) => ({ ...prevState, [product._id]: true }));
     try {
       const cart = { productId: product._id, quantity: 1 };
-      const response = await addProductToCart(cart, token);
+      // Assuming addProductToCart is already an API function
+      const response = await addProductToCart(cart, token); 
       showNotification("Item added to cart successfully!");
     } catch (error) {
       console.error("Error adding to cart:", error);
@@ -105,21 +110,21 @@ const Wishlist = () => {
     show: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1
-      }
-    }
+        staggerChildren: 0.1,
+      },
+    },
   };
 
   const cardVariants = {
     hidden: { y: 20, opacity: 0 },
     show: { y: 0, opacity: 1 },
-    exit: { y: -20, opacity: 0, transition: { duration: 0.2 } }
+    exit: { y: -20, opacity: 0, transition: { duration: 0.2 } },
   };
 
   return (
     <div className="min-h-screen bg-white py-12">
-    <BackButton/>
-    
+      <BackButton />
+
       {/* Notification */}
       <AnimatePresence>
         {notification.show && (
@@ -131,17 +136,18 @@ const Wishlist = () => {
               notification.type === "error" ? "bg-red-500 text-white" : "bg-emerald-500 text-white"
             }`}
           >
-            {notification.type === "error" ? 
-              <span className="mr-2">⚠️</span> : 
+            {notification.type === "error" ? (
+              <span className="mr-2">⚠️</span>
+            ) : (
               <BadgeCheck className="w-5 h-5 mr-2" />
-            }
+            )}
             {notification.message}
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Page Header */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -199,7 +205,7 @@ const Wishlist = () => {
             <AnimatePresence>
               {Array.isArray(wishlist) && wishlist.length > 0 ? (
                 wishlist
-                  .filter(item => item?.product) // Ensures product is not null or undefined
+                  .filter((item) => item?.product) // Ensures product is not null or undefined
                   .map(({ product }) => (
                     <motion.div
                       key={product._id}
@@ -210,46 +216,46 @@ const Wishlist = () => {
                     >
                       <div className="relative">
                         {/* Image container */}
-                        <div 
+                        <div
                           className="relative bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300"
                           onMouseEnter={() => setHoveredProductId(product._id)}
                           onMouseLeave={() => setHoveredProductId(null)}
                         >
                           {/* Product Image with gradient overlay */}
-                         {/* Product Image with gradient overlay */}
-<div className="relative h-60 overflow-hidden">
-  <img
-    src={Array.isArray(product?.Images) && product.Images.length > 0 
-          ? product.Images[0] 
-          : "/default-Image.jpg"}
-    alt={product?.Name || "Product Image"}
-    className="object-contain w-full h-full transform transition-transform duration-500 hover:scale-105"
-  />
+                          <div className="relative h-60 overflow-hidden">
+                            <img
+                              src={
+                                Array.isArray(product?.Images) && product.Images.length > 0
+                                  ? product.Images[0]
+                                  : "/default-Image.jpg"
+                              }
+                              alt={product?.Name || "Product Image"}
+                              className="object-contain w-full h-full transform transition-transform duration-500 hover:scale-105"
+                            />
 
-  {/* Quick view overlay on hover */}
-  {hoveredProductId === product._id && (
-    <motion.div
-      className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center rounded-xl"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => {
-          if (!product) return;
-          setQuickViewProduct(product);
-          setIsQuickViewOpen(true);
-        }}
-        className="bg-white text-gray-800 px-4 py-2 rounded-lg font-medium shadow-md"
-      >
-        Quick View
-      </motion.button>
-    </motion.div>
-  )}
-</div>
-
+                            {/* Quick view overlay on hover */}
+                            {hoveredProductId === product._id && (
+                              <motion.div
+                                className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center rounded-xl"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.3 }}
+                              >
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => {
+                                    if (!product) return;
+                                    setQuickViewProduct(product);
+                                    setIsQuickViewOpen(true);
+                                  }}
+                                  className="bg-white text-gray-800 px-4 py-2 rounded-lg font-medium shadow-md"
+                                >
+                                  Quick View
+                                </motion.button>
+                              </motion.div>
+                            )}
+                          </div>
                         </div>
 
                         {/* Floating price tag */}
@@ -311,11 +317,11 @@ const Wishlist = () => {
                           ) : (
                             <ShoppingCart className="mr-2" size={20} />
                           )}
-                          {isLoading[product._id] 
-                            ? "Adding..." 
-                            : product.Stock <= 0 
-                              ? "Out of Stock" 
-                              : "Add to Cart"}
+                          {isLoading[product._id]
+                            ? "Adding..."
+                            : product.Stock <= 0
+                            ? "Out of Stock"
+                            : "Add to Cart"}
                         </motion.button>
                       </div>
                     </motion.div>
@@ -330,7 +336,7 @@ const Wishlist = () => {
 
       {/* QuickView Modal - Moved outside the mapping to avoid multiple instances */}
       {isQuickViewOpen && quickViewProduct && (
-        <QuickViewModal 
+        <QuickViewModal
           product={quickViewProduct}
           isOpen={isQuickViewOpen}
           onClose={() => {
